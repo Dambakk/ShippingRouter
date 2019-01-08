@@ -1,4 +1,5 @@
-
+import org.jgrapht.graph.DefaultEdge
+import org.jgrapht.graph.DefaultUndirectedGraph
 
 
 fun main(args: Array<String>) {
@@ -25,4 +26,19 @@ fun main(args: Array<String>) {
         !it.deleted
     }
     println("Ports: ${ports.size}")
+
+
+    val graph = DefaultUndirectedGraph<Port, DefaultEdge>(DefaultEdge::class.java)
+    for (p in ports) {
+        graph.addVertex(p)
+    }
+
+
+    val polygons = FileHandler.readPolygonsFile()
+    println("polygons: ${polygons.size}")
+
+
+
+
+
 }

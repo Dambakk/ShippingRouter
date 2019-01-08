@@ -1,11 +1,11 @@
-
+import javafx.geometry.Pos
 
 fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 
 fun String.toFloat() = if (this.isEmpty()) 0.0f else this.toFloatOrNull()
 
 
-data class TradePattern(
+data class TradePattern (
       val id: String,
       val imo: String,
       val from: String,
@@ -42,7 +42,7 @@ data class TradePattern(
       val disapprovedBy: String,
       val disapprovedDateTime: String,
       val duplicatedId: String
-) {
+) : ShippingObject {
     constructor(list: List<String>) : this(
             list[0],
             list[1],
@@ -92,7 +92,7 @@ data class TradePattern(
 
 data class Position(val lat: Double, val lon: Double)
 
-data class Port(
+data class Port (
         val portId: String,
         val portName: String,
         val position: Position,
@@ -117,3 +117,37 @@ data class Port(
             countryCode = params[10]
     )
 }
+
+
+data class Polygon (
+        val name: String,
+        val region: String,
+        val subsection: String,
+        val basin: String,
+        val polygonEdges: List<Position>
+) {
+    constructor(params: List<String>) : this (
+            name = params[0],
+            region = params[1],
+            subsection = params[2],
+            basin = params[3],
+            polygonEdges = params[4]
+                    .split("((")[1]
+                    .split("))")[0].trim()
+                    .split(" ")
+                    .map { it.removeSuffix(",").toDouble() }
+                    .toPairedList()
+    )
+
+    companion object {
+        fun List<Double>.toPairedList(): List<Position> {
+            val res = mutableListOf<Position>()
+            for (i in 0 until this.size step 2) {
+                res.add(Position(this[i], this[i+1]))
+            }
+            return res
+        }
+    }
+}
+
+
