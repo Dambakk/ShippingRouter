@@ -89,3 +89,31 @@ data class TradePattern(
         return if (start < end) (start to end) else (end to start)
     }
 }
+
+data class Position(val lat: Double, val lon: Double)
+
+data class Port(
+        val portId: String,
+        val portName: String,
+        val position: Position,
+        val unicode: String,
+        val startTime: String,
+        val endTime: String,
+        val timezone: String,
+        val deleted: Boolean,
+        val replacementPort: String,
+        val countryCode: String
+) {
+    constructor(params: List<String>) : this (
+        portId = params[0],
+            portName = params[1],
+            position = Position(params[2].toDouble(), params[3].toDouble()),
+            unicode = params[4],
+            startTime = params[5],
+            endTime = params[6],
+            timezone = params[7],
+            deleted = params[8].toBoolean(),
+            replacementPort = params[9],
+            countryCode = params[10]
+    )
+}

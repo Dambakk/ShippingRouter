@@ -3,9 +3,7 @@
 
 fun main(args: Array<String>) {
     val trades = FileHandler.readTradePatternsFile()
-    print("Received ${trades.size} trades")
-
-    val test = trades.map { it.getFromAndToAlphabetical() to it.atSea}
+    println("Received ${trades.size} trades")
 
     val timeAtSea = mutableMapOf<Pair<String, String>, MutableList<Int>>()
     trades.forEach {
@@ -20,5 +18,11 @@ fun main(args: Array<String>) {
         it.key to it.value.average()
     }
 
+    println("Filtered, combined destinations, and calculated average travel time. Got ${timeAtSeaAverage.size} elements")
 
+
+    val ports = FileHandler.readPortsFile().filter {
+        !it.deleted
+    }
+    println("Ports: ${ports.size}")
 }
