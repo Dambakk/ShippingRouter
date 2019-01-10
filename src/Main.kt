@@ -1,5 +1,3 @@
-import org.jgrapht.graph.DefaultEdge
-import org.jgrapht.graph.DefaultUndirectedGraph
 
 
 fun main(args: Array<String>) {
@@ -21,21 +19,43 @@ fun main(args: Array<String>) {
 
     println("Filtered, combined destinations, and calculated average travel time. Got ${timeAtSeaAverage.size} elements")
 
-
-    val ports = FileHandler.readPortsFile().filter {
-        !it.deleted
-    }
+    val ports = FileHandler.readPortsFile()
+            .filter { !it.deleted }
+            .filter { it.portId in Config.portIdsOfInterest }
     println("Ports: ${ports.size}")
 
 
-    val graph = DefaultUndirectedGraph<Port, DefaultEdge>(DefaultEdge::class.java)
-    for (p in ports) {
-        graph.addVertex(p)
-    }
+//    val graph = DefaultUndirectedGraph<Port, DefaultEdge>(DefaultEdge::class.java)
+//    for (p in ports) {
+//        graph.addVertex(p)
+//    }
 
+    val portPoints = ports.map {
+        Node(it.position, it.name, true)
+    }
 
     val polygons = FileHandler.readPolygonsFile()
     println("polygons: ${polygons.size}")
+
+    val polygonPoints = polygons.map {
+        it.extractPoints()
+    }.flatten()
+
+    val points = polygons.map {polygon ->
+        polygon.polygonPoints.map {position ->
+            Node(position, polygon.name)
+        }
+    }.flatten()
+
+    val allPoints = points + portPoints
+
+    println("Got ${allPoints.size} points")
+
+    val pointsJsonString = Utils.toJsonString(allPoints)
+
+//    println(pointsJsonString)
+
+    GraphUtils.createGraph(polygons)
 
 
 

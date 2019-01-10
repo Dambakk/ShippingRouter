@@ -1,5 +1,3 @@
-import javafx.geometry.Pos
-
 fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 
 fun String.toFloat() = if (this.isEmpty()) 0.0f else this.toFloatOrNull()
@@ -94,7 +92,7 @@ data class Position(val lat: Double, val lon: Double)
 
 data class Port (
         val portId: String,
-        val portName: String,
+        val name: String,
         val position: Position,
         val unicode: String,
         val startTime: String,
@@ -106,7 +104,7 @@ data class Port (
 ) {
     constructor(params: List<String>) : this (
         portId = params[0],
-            portName = params[1],
+            name = params[1],
             position = Position(params[2].toDouble(), params[3].toDouble()),
             unicode = params[4],
             startTime = params[5],
@@ -124,14 +122,14 @@ data class Polygon (
         val region: String,
         val subsection: String,
         val basin: String,
-        val polygonEdges: List<Position>
+        val polygonPoints: List<Position>
 ) {
     constructor(params: List<String>) : this (
             name = params[0],
             region = params[1],
             subsection = params[2],
             basin = params[3],
-            polygonEdges = params[4]
+            polygonPoints = params[4]
                     .split("((")[1]
                     .split("))")[0].trim()
                     .split(" ")
@@ -149,5 +147,12 @@ data class Polygon (
         }
     }
 }
+
+
+data class Node (
+    val position: Position,
+    val name: String,
+    val isPort: Boolean = false
+)
 
 
