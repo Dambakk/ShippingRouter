@@ -1,4 +1,4 @@
-
+import com.google.gson.annotations.SerializedName
 
 /**
  *  Representation of a graph.
@@ -38,14 +38,13 @@ class GraphEdge (
         override val fromNode: ShippingNode,
         override val toNode: ShippingNode,
         override val cost: Int
-) : ShippingEdge {
+) : ShippingEdge
 
-}
+class GraphPortNode (@SerializedName("name2") override val name: String,
+                     @SerializedName("position2") override val position: Position,
+                     val polygon: Polygon) : GraphNode(name, position)
 
-
-class GraphNode (
+open class GraphNode (
         override val name: String,
         override val position: Position
-) : ShippingNode {
-
-}
+) : ShippingNode

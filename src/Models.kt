@@ -122,7 +122,8 @@ data class Polygon (
         val region: String,
         val subsection: String,
         val basin: String,
-        val polygonPoints: List<Position>
+        val polygonPoints: List<Position>,
+        var graphNodes: MutableList<ShippingNode>
 ) {
     constructor(params: List<String>) : this (
             name = params[0],
@@ -134,8 +135,12 @@ data class Polygon (
                     .split("))")[0].trim()
                     .split(" ")
                     .map { it.removeSuffix(",").toDouble() }
-                    .toPairedList()
-    )
+                    .toPairedList(),
+            graphNodes = mutableListOf()
+    ) {
+        graphNodes = polygonPoints.map { GraphNode(name, it) }.toMutableList()
+
+    }
 
     companion object {
         fun List<Double>.toPairedList(): List<Position> {
@@ -147,7 +152,6 @@ data class Polygon (
         }
     }
 }
-
 
 data class Node (
     val position: Position,

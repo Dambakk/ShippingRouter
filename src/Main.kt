@@ -55,7 +55,7 @@ fun main(args: Array<String>) {
 
 //    println(pointsJsonString)
 
-    GraphUtils.createGraph(polygons)
+    GraphUtils.createGraph(polygons, ports)
 
 
 

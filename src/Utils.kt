@@ -1,5 +1,6 @@
 import com.google.gson.Gson
 import javafx.geometry.Pos
+import java.awt.Point
 
 object Utils {
 
@@ -7,6 +8,11 @@ object Utils {
         val gson = Gson()
         return gson.toJson(input)
     }
+
+//    fun toJsonString(input: List<GraphEdge>): String {
+//        val gson = Gson()
+//        val newList = input.r
+//    }
 
 
 }
@@ -44,6 +50,10 @@ fun Position.distanceFrom(other: Position): Double {
     return Math.sqrt(distance)
 }
 
+fun Position.flip(): Position {
+    return Position(lon, lat)
+}
+
 
 /**
  * Returns positions in this format:
@@ -76,5 +86,27 @@ fun GraphEdge.getMiddlePosition(): Position {
     val newX = (fromNode.position.lat + toNode.position.lat) / 2.0
     val newY = (fromNode.position.lon + toNode.position.lon) / 2.0
     return Position(newX, newY)
+}
+
+
+/**
+ * Get the polygon in which the port resides in
+ */
+fun GraphPortNode.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
+    return polygons.find { position.isIn(it) }
+}
+
+/**
+ * Get the polygon in which the position is in
+ */
+fun Position.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
+    return polygons.find { this.isIn(it) }
+}
+
+fun Position.isIn(polygon: Polygon): Boolean {
+    val xs = polygon.polygonPoints.map { it.lat.toInt() }.toIntArray()
+    val ys = polygon.polygonPoints.map { it.lon.toInt() }.toIntArray()
+    val javaPolygon = java.awt.Polygon(xs, ys, polygon.polygonPoints.size)
+    return javaPolygon.contains(Point(this.lon.toInt(), this.lat.toInt()))
 }
 
