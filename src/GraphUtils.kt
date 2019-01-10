@@ -11,35 +11,60 @@ object GraphUtils {
                     .map { position -> GraphNode(polygon.name, position) }
                     .zipWithNext()
                     .map { GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) }
+                    .map {
+                        val res = it.splitInTwo()
+//                        polygon.graphNodes.add(res.first().fromNode)
+                        polygon.graphNodes.add(res.first().toNode) // This is the middle node
+                        res
+                    }
+                    .flatten()
         }.flatten().toMutableList()
 
         println("1) Generated ${connections.size} connections")
 
 
-        val size = connections.size
-
-
-        // 2) Find center in each polygon
+        // 2) Find center in each polygon and connect with polygon
         val centersNodes = polygons.map { polygon ->
-            val node = GraphNode(polygon.name, polygon.getCenterPosition())
-            polygon.graphNodes.add(node)
-            node
+            val centerNode = GraphNode(polygon.name, polygon.getCenterPosition())
+            val newNodes = mutableListOf<ShippingNode>()
+            polygon.graphNodes.forEach {
+                val connection = GraphEdge(centerNode, it, centerNode.position.distanceFrom(it.position).toInt()).splitInTwo()
+//                polygon.graphNodes.add(split.first().fromNode)
+                newNodes.add(connection.first().toNode) // This is the middle node
+                connections.addAll(connection)
+            }
+            polygon.graphNodes.add(centerNode)
+            polygon.graphNodes.addAll(newNodes)
+            polygon.middleNodes.addAll(newNodes)
+            centerNode
         }
 
         println("2) Generated ${centersNodes.size} center nodes")
 
 
-        // 3) Connect center with each node in polygon
 
-        centersNodes.forEach { center ->
-            val polygonNodes = polygons.find { it.name == center.name }
-                    ?.polygonPoints?.map { position -> GraphNode(center.name, position) }
-            val centerConnections = polygonNodes?.map { GraphEdge(center, it, center.position.distanceFrom(it.position).toInt()) }
+        // 2.5) Add connection between the nodes in the middle layer of each polygon
 
-            if (centerConnections != null) {
-                connections.addAll(centerConnections)
+        polygons.forEach { polygon ->
+            polygon.middleNodes.add(polygon.middleNodes.first())
+            polygon.middleNodes.zipWithNext { a, b ->
+                connections.add(GraphEdge(a, b, a.position.distanceFrom(b.position).toInt()))
             }
         }
+
+        // 3) Connect center with each node in polygon
+
+//        centersNodes.forEach { center ->
+//            val polygonNodes = polygons.find { it.name == center.name }
+//                    ?.polygonPoints?.map { position -> GraphNode(center.name, position) }
+//            val polygonNodes = polygons.find { it.name == center.name }
+//                    ?.polygonPoints?.map { position -> GraphNode(center.name, position) }
+//            val centerConnections = polygonNodes?.map { GraphEdge(center, it, center.position.distanceFrom(it.position).toInt()) }
+//
+//            if (centerConnections != null) {
+//                connections.addAll(centerConnections)
+//            }
+//        }
 
         println("3) Generated connections from each center node to corresponding polygon nodes. Now, a total of ${connections.size} connections")
 

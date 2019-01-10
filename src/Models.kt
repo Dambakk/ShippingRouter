@@ -3,43 +3,43 @@ fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 fun String.toFloat() = if (this.isEmpty()) 0.0f else this.toFloatOrNull()
 
 
-data class TradePattern (
-      val id: String,
-      val imo: String,
-      val from: String,
-      val fromEta: String,
-      val fromEtaTimestamp: String,
-      val fromEts: String,
-      val fromEtsTimestamp: String,
-      val to: String,
-      val toEta: String,
-      val toEtaTimestamp: String,
-      val toEts: String,
-      val toEtsTimestamp: String,
-      val hoursBetweenFromEtsAndToEtaDepDest: Int,
-      val atSea: Int,
-      val inAnchorageBeforeEnteringDeparture: Int,
-      val inDeparturePort: Int,
-      val inDepartureBerth: Int,
-      val inAnchorageLeavingDeparture: Int,
-      val transitAnchorageTime: Int,
-      val inAnchorageBeforeEnteringDestinationPort: Int,
-      val inDestinationPort: Int,
-      val inDestinationBerth: Int,
-      val portPolygonsVisited: Int,
-      val berthPolygonsVisited: Int,
-      val anchoragePolygonsVisited: Int,
-      val destinationComponent: String,
-      val query: String,
-      val approved: Int,
-      val approvedBy: String,
-      val approvedDateTime: String,
-      val metricScore: Float?,
-      val pathScore: Float?,
-      val disapproved: Int,
-      val disapprovedBy: String,
-      val disapprovedDateTime: String,
-      val duplicatedId: String
+data class TradePattern(
+        val id: String,
+        val imo: String,
+        val from: String,
+        val fromEta: String,
+        val fromEtaTimestamp: String,
+        val fromEts: String,
+        val fromEtsTimestamp: String,
+        val to: String,
+        val toEta: String,
+        val toEtaTimestamp: String,
+        val toEts: String,
+        val toEtsTimestamp: String,
+        val hoursBetweenFromEtsAndToEtaDepDest: Int,
+        val atSea: Int,
+        val inAnchorageBeforeEnteringDeparture: Int,
+        val inDeparturePort: Int,
+        val inDepartureBerth: Int,
+        val inAnchorageLeavingDeparture: Int,
+        val transitAnchorageTime: Int,
+        val inAnchorageBeforeEnteringDestinationPort: Int,
+        val inDestinationPort: Int,
+        val inDestinationBerth: Int,
+        val portPolygonsVisited: Int,
+        val berthPolygonsVisited: Int,
+        val anchoragePolygonsVisited: Int,
+        val destinationComponent: String,
+        val query: String,
+        val approved: Int,
+        val approvedBy: String,
+        val approvedDateTime: String,
+        val metricScore: Float?,
+        val pathScore: Float?,
+        val disapproved: Int,
+        val disapprovedBy: String,
+        val disapprovedDateTime: String,
+        val duplicatedId: String
 ) : ShippingObject {
     constructor(list: List<String>) : this(
             list[0],
@@ -80,7 +80,7 @@ data class TradePattern (
             list[35]
     )
 
-    fun getFromAndTo(): Pair<String, String>  = this.from to this.to
+    fun getFromAndTo(): Pair<String, String> = this.from to this.to
 
     fun getFromAndToAlphabetical(): Pair<String, String> {
         val (start, end) = getFromAndTo()
@@ -90,7 +90,7 @@ data class TradePattern (
 
 data class Position(val lat: Double, val lon: Double)
 
-data class Port (
+data class Port(
         val portId: String,
         val name: String,
         val position: Position,
@@ -102,8 +102,8 @@ data class Port (
         val replacementPort: String,
         val countryCode: String
 ) {
-    constructor(params: List<String>) : this (
-        portId = params[0],
+    constructor(params: List<String>) : this(
+            portId = params[0],
             name = params[1],
             position = Position(params[2].toDouble(), params[3].toDouble()),
             unicode = params[4],
@@ -117,15 +117,18 @@ data class Port (
 }
 
 
-data class Polygon (
+data class Polygon(
         val name: String,
         val region: String,
         val subsection: String,
         val basin: String,
         val polygonPoints: List<Position>,
-        var graphNodes: MutableList<ShippingNode>
+        var graphNodes: MutableList<ShippingNode>,
+        var outerNodes: MutableList<ShippingNode>,
+        var middleNodes: MutableList<ShippingNode>,
+        var centerNode: ShippingNode
 ) {
-    constructor(params: List<String>) : this (
+    constructor(params: List<String>) : this(
             name = params[0],
             region = params[1],
             subsection = params[2],
@@ -136,7 +139,10 @@ data class Polygon (
                     .split(" ")
                     .map { it.removeSuffix(",").toDouble() }
                     .toPairedList(),
-            graphNodes = mutableListOf()
+            graphNodes = mutableListOf(),
+            outerNodes = mutableListOf(),
+            middleNodes = mutableListOf(),
+            centerNode = GraphNode("", Position(0.0, 0.0))
     ) {
         graphNodes = polygonPoints.map { GraphNode(name, it) }.toMutableList()
 
@@ -146,17 +152,17 @@ data class Polygon (
         fun List<Double>.toPairedList(): List<Position> {
             val res = mutableListOf<Position>()
             for (i in 0 until this.size step 2) {
-                res.add(Position(this[i], this[i+1]))
+                res.add(Position(this[i], this[i + 1]))
             }
             return res
         }
     }
 }
 
-data class Node (
-    val position: Position,
-    val name: String,
-    val isPort: Boolean = false
+data class Node(
+        val position: Position,
+        val name: String,
+        val isPort: Boolean = false
 )
 
 

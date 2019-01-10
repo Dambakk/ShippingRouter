@@ -93,20 +93,29 @@ fun GraphEdge.getMiddlePosition(): Position {
  * Get the polygon in which the port resides in
  */
 fun GraphPortNode.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
-    return polygons.find { position.isIn(it) }
+    return polygons.find { position isIn it }
 }
 
 /**
  * Get the polygon in which the position is in
  */
 fun Position.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
-    return polygons.find { this.isIn(it) }
+    return polygons.find { this isIn it }
 }
 
-fun Position.isIn(polygon: Polygon): Boolean {
+infix fun Position.isIn(polygon: Polygon): Boolean {
     val xs = polygon.polygonPoints.map { it.lat.toInt() }.toIntArray()
     val ys = polygon.polygonPoints.map { it.lon.toInt() }.toIntArray()
     val javaPolygon = java.awt.Polygon(xs, ys, polygon.polygonPoints.size)
     return javaPolygon.contains(Point(this.lon.toInt(), this.lat.toInt()))
 }
 
+
+
+fun GraphEdge.splitInTwo(): List<GraphEdge> {
+    val middlePos = this.getMiddlePosition()
+    val middleNode = GraphNode(this.fromNode.name, middlePos)
+    val con1 = GraphEdge(this.fromNode, middleNode, this.cost / 2)
+    val con2 = GraphEdge(middleNode, this.toNode, this.cost / 2)
+    return listOf(con1, con2)
+}
