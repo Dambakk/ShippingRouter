@@ -1,14 +1,17 @@
+import ch.hsr.geohash.GeoHash
+
 object GraphUtils {
 
 
-    fun createGraph(polygons: List<Polygon>, ports: List<Port>) {
+    fun createGraph(polygons: List<Polygon>, ports: List<Port>, sanitizedGroupedPoints: List<Node>): Graph {
 
 
         // 1) Generate outer connection on each polygon:
 
         val connections = polygons.map { polygon ->
             polygon.polygonPoints
-                    .map { position -> GraphNode(polygon.name, position) }
+//                    .map { position -> GraphNode(polygon.name, position) }
+                    .map { position -> sanitizedGroupedPoints.getNodeWithPosition(position.flip()) }
                     .zipWithNext()
                     .map { GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) }
                     .map {
@@ -25,7 +28,9 @@ object GraphUtils {
 
         // 2) Find center in each polygon and connect with polygon
         val centersNodes = polygons.map { polygon ->
-            val centerNode = GraphNode(polygon.name, polygon.getCenterPosition())
+            val centerPos = polygon.getCenterPosition()
+            val centerPos2 = centerPos.flip()
+            val centerNode = Node(centerPos, polygon.name, isPort = false, geohash = GeoHash.withBitPrecision(centerPos2.lat, centerPos2.lon, 64))
             val newNodes = mutableListOf<ShippingNode>()
             polygon.graphNodes.forEach {
                 val connection = GraphEdge(centerNode, it, centerNode.position.distanceFrom(it.position).toInt()).splitInTwo()
@@ -52,19 +57,6 @@ object GraphUtils {
             }
         }
 
-        // 3) Connect center with each node in polygon
-
-//        centersNodes.forEach { center ->
-//            val polygonNodes = polygons.find { it.name == center.name }
-//                    ?.polygonPoints?.map { position -> GraphNode(center.name, position) }
-//            val polygonNodes = polygons.find { it.name == center.name }
-//                    ?.polygonPoints?.map { position -> GraphNode(center.name, position) }
-//            val centerConnections = polygonNodes?.map { GraphEdge(center, it, center.position.distanceFrom(it.position).toInt()) }
-//
-//            if (centerConnections != null) {
-//                connections.addAll(centerConnections)
-//            }
-//        }
 
         println("3) Generated connections from each center node to corresponding polygon nodes. Now, a total of ${connections.size} connections")
 
@@ -86,11 +78,17 @@ object GraphUtils {
         println("4) Generated connections from ports to nodes in polygon that port belongs to. Now, a total of ${connections.size} connections")
 
 
-        // 4) Generate inbetween nodes
+        val newConnections = connections.filterIndexed {i, edge ->
+            connections.subList(i, connections.size).contains(edge)
+        }
 
+        println("Size of newConnections: ${newConnections.size}")
 
-        // 5) Connect inbetween nodes with surroundings
+        val allNodes = portPoints + polygons.map { it.graphNodes } as List<ShippingNode>
 
+        val graph = Graph(connections, allNodes)
+
+        return graph
 
     }
 }

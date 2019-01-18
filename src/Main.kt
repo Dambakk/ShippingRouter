@@ -1,4 +1,4 @@
-
+import ch.hsr.geohash.GeoHash
 
 fun main(args: Array<String>) {
     val trades = FileHandler.readTradePatternsFile()
@@ -31,7 +31,8 @@ fun main(args: Array<String>) {
 //    }
 
     val portPoints = ports.map {
-        Node(it.position, it.name, true)
+        val pos = it.position
+        Node(pos, it.name, true, GeoHash.withBitPrecision(pos.lat, pos.lon, 64))
     }
 
     val polygons = FileHandler.readPolygonsFile()
@@ -43,7 +44,8 @@ fun main(args: Array<String>) {
 
     val points = polygons.map {polygon ->
         polygon.polygonPoints.map {position ->
-            Node(position, polygon.name)
+            val pos = position.flip()
+            Node(pos.flip(), polygon.name, geohash = GeoHash.withBitPrecision(pos.lat, pos.lon, 64))
         }
     }.flatten()
 
@@ -51,11 +53,19 @@ fun main(args: Array<String>) {
 
     println("Got ${allPoints.size} points")
 
+
+    val groupedPoints = points.groupBy {
+        it.geohash.getGeoHashWithPrecision(16)
+    }.map { (key, list) ->
+        val newName = list.map { it.name }.toSet().joinToString(separator = "+")
+        Node(list.first().position, newName, list.first().isPort, GeoHash.fromBinaryString(key))
+    }
+
     val pointsJsonString = Utils.toJsonString(allPoints)
 
 //    println(pointsJsonString)
 
-    GraphUtils.createGraph(polygons, ports)
+    GraphUtils.createGraph(polygons, ports, groupedPoints)
 
 
 

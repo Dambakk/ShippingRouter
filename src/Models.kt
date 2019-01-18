@@ -1,3 +1,5 @@
+import ch.hsr.geohash.GeoHash
+
 fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 
 fun String.toFloat() = if (this.isEmpty()) 0.0f else this.toFloatOrNull()
@@ -88,7 +90,13 @@ data class TradePattern(
     }
 }
 
-data class Position(val lat: Double, val lon: Double)
+data class Position(val lat: Double, val lon: Double) {
+    override fun equals(other: Any?): Boolean {
+        return other is Position &&
+                this.lat == other.lat &&
+                this.lon == other.lon
+    }
+}
 
 data class Port(
         val portId: String,
@@ -160,9 +168,10 @@ data class Polygon(
 }
 
 data class Node(
-        val position: Position,
-        val name: String,
-        val isPort: Boolean = false
-)
+        override val position: Position,
+        override val name: String,
+        val isPort: Boolean = false,
+        val geohash: GeoHash
+): ShippingNode
 
 

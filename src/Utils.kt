@@ -1,6 +1,7 @@
+import ch.hsr.geohash.GeoHash
 import com.google.gson.Gson
-import javafx.geometry.Pos
 import java.awt.Point
+import kotlin.Exception
 
 object Utils {
 
@@ -114,8 +115,31 @@ infix fun Position.isIn(polygon: Polygon): Boolean {
 
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
-    val middleNode = GraphNode(this.fromNode.name, middlePos)
+    val mPos2 = middlePos.flip()
+    val middleNode = Node(middlePos, this.fromNode.name, isPort = false, geohash = GeoHash.withBitPrecision(mPos2.lat, mPos2.lon, 64))
     val con1 = GraphEdge(this.fromNode, middleNode, this.cost / 2)
     val con2 = GraphEdge(middleNode, this.toNode, this.cost / 2)
     return listOf(con1, con2)
+}
+
+
+fun GeoHash.getGeoHashWithPrecision(precision: Int): String {
+    if (precision !in 0..64) {
+        throw Exception("Precision must be in interval (0,64)")
+    }
+    return this.toBinaryString().substring(0..(precision - 1))
+}
+
+
+fun List<Node>.getNodeWithPosition(position: Position): Node {
+    val node = this.find { it.geohash.contains(GeoHash.withBitPrecision(position.lat, position.lon, 64).point) }
+    return node ?: throw Exception("Did not find a node that covers this position: $position")
+}
+
+
+fun List<ShippingEdge>.toJson(): String {
+    this.map {
+
+    }
+    return "To be implemented"
 }

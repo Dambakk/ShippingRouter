@@ -38,7 +38,13 @@ class GraphEdge (
         override val fromNode: ShippingNode,
         override val toNode: ShippingNode,
         override val cost: Int
-) : ShippingEdge
+) : ShippingEdge {
+    override fun equals(other: Any?): Boolean {
+        return other is GraphEdge &&
+                (this.fromNode == other.fromNode && this.toNode == other.toNode ||
+                this.fromNode == other.toNode && this.toNode == other.fromNode)
+    }
+}
 
 class GraphPortNode (@SerializedName("name2") override val name: String,
                      @SerializedName("position2") override val position: Position,
@@ -47,4 +53,10 @@ class GraphPortNode (@SerializedName("name2") override val name: String,
 open class GraphNode (
         override val name: String,
         override val position: Position
-) : ShippingNode
+) : ShippingNode {
+    override fun equals(other: Any?): Boolean {
+        return other is GraphNode && (
+                this.position == other.position
+                )
+    }
+}
