@@ -84,7 +84,7 @@ object GraphUtils {
 
         println("Size of newConnections: ${newConnections.size}")
 
-        val allNodes = portPoints + polygons.map { it.graphNodes } as List<ShippingNode>
+        val allNodes = portPoints + polygons.map { it.graphNodes }.flatten()
 
         val graph = Graph(connections, allNodes)
 

@@ -112,7 +112,6 @@ infix fun Position.isIn(polygon: Polygon): Boolean {
 }
 
 
-
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
     val mPos2 = middlePos.flip()

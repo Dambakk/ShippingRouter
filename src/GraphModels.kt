@@ -13,8 +13,8 @@ interface ShippingGraph {
  * An edge is a connection between two nodes in a graph.
  */
 interface ShippingEdge {
-    val fromNode: ShippingNode
-    val toNode: ShippingNode
+    var fromNode: ShippingNode
+    var toNode: ShippingNode
     val cost: Int
 }
 
@@ -35,8 +35,8 @@ class Graph(
 
 
 class GraphEdge (
-        override val fromNode: ShippingNode,
-        override val toNode: ShippingNode,
+        override var fromNode: ShippingNode,
+        override var toNode: ShippingNode,
         override val cost: Int
 ) : ShippingEdge {
     override fun equals(other: Any?): Boolean {
@@ -44,11 +44,15 @@ class GraphEdge (
                 (this.fromNode == other.fromNode && this.toNode == other.toNode ||
                 this.fromNode == other.toNode && this.toNode == other.fromNode)
     }
+
+    override fun toString() = "[$fromNode - $toNode]"
 }
 
 class GraphPortNode (@SerializedName("name2") override val name: String,
                      @SerializedName("position2") override val position: Position,
-                     val polygon: Polygon) : GraphNode(name, position)
+                     val polygon: Polygon) : GraphNode(name, position) {
+    override fun toString() = super.toString().replace("False", "True")
+}
 
 open class GraphNode (
         override val name: String,
@@ -59,4 +63,7 @@ open class GraphNode (
                 this.position == other.position
                 )
     }
+
+    override fun toString() = "($name $position isPort=False)"
+
 }

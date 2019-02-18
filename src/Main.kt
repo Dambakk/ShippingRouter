@@ -65,7 +65,30 @@ fun main(args: Array<String>) {
 
 //    println(pointsJsonString)
 
-    GraphUtils.createGraph(polygons, ports, groupedPoints)
+    val graph = GraphUtils.createGraph(polygons, ports, groupedPoints)
+    println(graph)
+
+
+    val start = graph.nodes[3] // Taixing
+    val goal = graph.nodes[12] // Manila
+
+    val path = AStar.startAStar(graph, start, goal)
+    println(path)
+
+    println("Start: ${start.name}")
+    for (item in path!!) {
+        println("From ${item.fromNode}      -       To ${item.toNode}")
+    }
+    println("End: ${goal.name}")
+
+    println(GeoJson.pathToGeoJson(path))
+
+    println("Done")
+
+
+
+
+
 
 
 

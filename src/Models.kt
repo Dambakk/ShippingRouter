@@ -96,6 +96,8 @@ data class Position(val lat: Double, val lon: Double) {
                 this.lat == other.lat &&
                 this.lon == other.lon
     }
+
+    override fun toString() = "($lat,$lon)"
 }
 
 data class Port(
@@ -172,6 +174,13 @@ data class Node(
         override val name: String,
         val isPort: Boolean = false,
         val geohash: GeoHash
-): ShippingNode
+): ShippingNode, GeoJsonInterface {
+
+    override fun toString() = "($name $position isPort=$isPort)"
+
+    override fun toGeoJsonObject() {
+
+    }
+}
 
 
