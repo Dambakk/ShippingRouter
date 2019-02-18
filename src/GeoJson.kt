@@ -24,9 +24,9 @@ object GeoJson {
       "type": "Feature",
       "geometry": {
         "type": "GEOJSONTYPE",
-        "coordinates": [
+        "coordinates":
             COORDINATES
-        ]
+
       },
       "properties": {
         PROPERTIES

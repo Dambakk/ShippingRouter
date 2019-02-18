@@ -1,6 +1,7 @@
 import ch.hsr.geohash.GeoHash
 import com.google.gson.Gson
 import java.awt.Point
+import java.io.File
 import kotlin.Exception
 
 object Utils {
@@ -142,3 +143,10 @@ fun List<ShippingEdge>.toJson(): String {
     }
     return "To be implemented"
 }
+
+fun writeJsonToFile(geoJson: String) {
+    val file = File(Config.geoJsonFilePath)
+    file.writeText(geoJson)
+    println("Written geoJson to ${Config.geoJsonFilePath}.")
+}
+

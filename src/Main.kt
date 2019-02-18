@@ -69,8 +69,9 @@ fun main(args: Array<String>) {
     println(graph)
 
 
-    val start = graph.nodes[3] // Taixing
-    val goal = graph.nodes[12] // Manila
+    val start = graph.nodes[4] // Taixing
+//    val goal = graph.nodes[12] // Manila
+    val goal = graph.nodes[19] // Lake charles
 
     val path = AStar.startAStar(graph, start, goal)
     println(path)
@@ -81,7 +82,10 @@ fun main(args: Array<String>) {
     }
     println("End: ${goal.name}")
 
-    println(GeoJson.pathToGeoJson(path))
+
+    val geoJson = GeoJson.pathToGeoJson(path)
+    println(geoJson)
+    writeJsonToFile(geoJson)
 
     println("Done")
 
