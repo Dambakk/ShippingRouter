@@ -1,2 +1,4 @@
 Maven:
 jgrapht-core-1.3.0.jar
+Geotools main
+Geotools shapefile module
