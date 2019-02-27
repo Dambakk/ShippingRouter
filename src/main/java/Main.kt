@@ -49,6 +49,10 @@ fun main(args: Array<String>) {
             .map { Node(it.position, it.name, true, GeoHash.withBitPrecision(it.position.lat, it.position.lon, 64), it.portId) }
             .also { println("Number of ports: ${it.size}") }
 
+    portPoints.forEach {
+        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Port position invalid: ${it.position}, ${it.portId}"}
+    }
+
 
     val polygons = FileHandler.readPolygonsFile()
     println("Number of polygons: ${polygons.size}")
@@ -57,17 +61,22 @@ fun main(args: Array<String>) {
             .asSequence()
             .map { polygon ->
                 polygon.polygonPoints.map { position ->
-                    val pos = position.flip()
-//                    val pos = position
+//                    val pos = position.flip()
+                    val pos = position
+                    assert(pos.lat in (-90.0..90.0) && pos.lon in (-180.0..180.0)) {"Port position invalid: $pos, ${polygon.name}"}
                     Node(pos, polygon.name, geohash = GeoHash.withBitPrecision(pos.lat, pos.lon, 64))
                 }
             }
             .flatten()
             .toList()
 
-    val point2 = points
-            .filter { Coordinate(it.position.lon, it.position.lat) notIn worldCountries }
-            .toList()
+    points.forEach {
+        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Node position invalid: ${it.position}"}
+    }
+
+//    val point2 = points
+//            .filter { Coordinate(it.position.lon, it.position.lat) notIn worldCountries } // Filter points on land
+//            .toList()
 
 
     val allPoints = points + portPoints
@@ -82,10 +91,11 @@ fun main(args: Array<String>) {
             }
 
     val pointsJsonString = Utils.toJsonString(allPoints)
+    println(pointsJsonString)
 
 //    println(pointsJsonString)
 
-    val graph = GraphUtils.createGraph(polygons, portPoints, groupedPoints)
+    val graph = GraphUtils.createGraph(polygons, portPoints, groupedPoints, worldCountries)
     println(graph)
 
 
@@ -110,36 +120,4 @@ fun main(args: Array<String>) {
     println("Done")
 
 
-}
-
-
-fun readShapeFile() {
-    val lakes = "assets/world-borders.shp"
-    val params = HashMap<String, Any>()
-//    params["url"] = DataUtilities.fileToURL(File(lakes))
-    params["url"] = File(lakes).toURI().toURL()
-    getDataStore(params)
-    val ds = getDataStore(params)
-
-    val name = ds.typeNames[0]
-    val source = ds.getFeatureSource(name)
-    val polyFinder = NearestPolygon(source.features)
-    for (i in 0..99) {
-//        val p = GenerateRandomData.createRandomPoint()
-//        val pointOnLine = polyFinder.findNearestPolygon(p)
-//        if (!pointOnLine.isEmpty()) {
-//            println("$i At $pointOnLine is closest to $p")
-//            val lastMatched2 = polyFinder.getLastMatched()
-//            var attribute = lastMatched2.getAttribute("name") as String
-//            if (attribute.isEmpty()) {
-//                attribute = lastMatched2.getAttribute("note")
-//            }
-//            if ((lastMatched2.getDefaultGeometry() as Geometry).contains(p)) {
-//                println("is in lake $attribute")
-//            } else {
-//                println("nearest lake is $attribute")
-//            }
-//
-//        }
-    }
 }

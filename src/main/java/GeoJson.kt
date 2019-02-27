@@ -13,6 +13,9 @@ interface GeoJsonInterface {
 
 infix fun Coordinate.notIn(countries: List<Polygon>) = !countries.any { it.contains(GeometryFactory().createPoint(this)) }
 
+infix fun ShippingNode.notIn(countries: List<Polygon>) = Coordinate(this.position.lon, this.position.lat) notIn countries
+//        !countries.any { it.contains(GeometryFactory().createPoint(Coordinate(this.position.lon, this.position.lat))) }
+
 
 data class GeoJsonObject(val type: String,
                          val features: List<GeoJsonFeature>) {
@@ -63,7 +66,7 @@ class GeoJsonGeometry(val type: String,
 
     val coordinates: List<List<Any>> = coordinates
         get() = when (type) {
-            "Polygon" -> field as List<List<Double>>
+            "KlavenessPolygon" -> field as List<List<Double>>
             "MultiPolygon" -> field as List<List<List<Double>>>
             else -> field as List<List<Double>>
         }
@@ -73,7 +76,7 @@ class GeoJsonGeometry(val type: String,
 enum class GeoJsonType(val typeName: String) {
     LINE_STRING("LineString"),
     POINT("Point"),
-    POLYGON("Polygon"),
+    POLYGON("KlavenessPolygon"),
     MULTIPOLYGON("MultiPolygon")
 }
 
@@ -116,7 +119,7 @@ object GeoJson {
 
     fun pathToGeoJson(path: List<ShippingEdge>): String {
         val coords = path.map { item ->
-            "[${item.fromNode.position.lat}, ${item.fromNode.position.lon}],[${item.toNode.position.lat}, ${item.toNode.position.lon}]"
+            "[${item.fromNode.position.lon}, ${item.fromNode.position.lat}],[${item.toNode.position.lon}, ${item.toNode.position.lat}]"
         }.toString()
 
         val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords)

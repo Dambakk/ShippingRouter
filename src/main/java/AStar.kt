@@ -68,6 +68,7 @@ object AStar {
 
             if (currentNode.node == goalNode) {
                 closedList.add(currentNode.flipConnectionNodes())
+//                closedList.add(currentNode)
                 break
             }
 

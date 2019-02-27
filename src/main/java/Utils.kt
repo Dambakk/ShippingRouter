@@ -1,9 +1,10 @@
 import ch.hsr.geohash.GeoHash
 import com.google.gson.Gson
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
 import java.awt.Point
 import java.io.File
 import kotlin.Exception
-import kotlin.test.assert
 
 object Utils {
 
@@ -63,7 +64,7 @@ fun Position.flip(): Position {
  * [ [x1, y1], [x2, y2], ..., [xn, yn] ]
  *
  */
-fun Polygon.extractPoints(): List<List<Double>> {
+fun KlavenessPolygon.extractPoints(): List<List<Double>> {
     val list = mutableListOf<List<Double>>()
     polygonPoints.forEach {
         val pos = listOf<Double>(it.lon, it.lat)
@@ -73,7 +74,7 @@ fun Polygon.extractPoints(): List<List<Double>> {
 }
 
 
-fun Polygon.getCenterPosition(): Position {
+fun KlavenessPolygon.getCenterPosition(): Position {
     var centroidX = 0.0
     var centroidY = 0.0
 
@@ -93,31 +94,33 @@ fun GraphEdge.getMiddlePosition(): Position {
 
 
 /**
- * Get the polygon in which the port resides in
+ * Get the klavenessPolygon in which the port resides in
  */
-fun GraphPortNode.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
-    return polygons.find { position isIn it }
+fun GraphPortNode.getCorrespondingPolygon(klavenessPolygons: List<KlavenessPolygon>): KlavenessPolygon? {
+    return klavenessPolygons.find { position isIn it }
 }
 
 /**
- * Get the polygon in which the position is in
+ * Get the klavenessPolygon in which the position is in
  */
-fun Position.getCorrespondingPolygon(polygons: List<Polygon>): Polygon? {
-    return polygons.find { this isIn it }
+fun Position.getCorrespondingPolygon(klavenessPolygons: List<KlavenessPolygon>): KlavenessPolygon? {
+    return klavenessPolygons.find { this isIn it }
 }
 
-infix fun Position.isIn(polygon: Polygon): Boolean {
-    val xs = polygon.polygonPoints.map { it.lat.toInt() }.toIntArray()
-    val ys = polygon.polygonPoints.map { it.lon.toInt() }.toIntArray()
-    val javaPolygon = java.awt.Polygon(xs, ys, polygon.polygonPoints.size)
-    return javaPolygon.contains(Point(this.lon.toInt(), this.lat.toInt()))
+infix fun Position.isIn(klavenessPolygon: KlavenessPolygon): Boolean {
+    val xs = klavenessPolygon.polygonPoints.map { it.lat.toInt() }.toIntArray()
+    val ys = klavenessPolygon.polygonPoints.map { it.lon.toInt() }.toIntArray()
+    val javaPolygon = java.awt.Polygon(xs, ys, klavenessPolygon.polygonPoints.size)
+    return javaPolygon.contains(Point(this.lat.toInt(), this.lon.toInt()))
 }
 
+//infix fun Position.isIn(klavenessPolygons: List<KlavenessPolygon>): Boolean {
+//    klavenessPolygons.any { it.contains(GeometryFactory().createPoint(Coordinate(this.lat, this.lon))) }
+//}
 
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
-    val mPos2 = middlePos.flip()
-    val middleNode = Node(middlePos, this.fromNode.name, isPort = false, geohash = GeoHash.withBitPrecision(mPos2.lat, mPos2.lon, 64))
+    val middleNode = Node(middlePos, this.fromNode.name, isPort = false, geohash = GeoHash.withBitPrecision(middlePos.lat, middlePos.lon, 64))
     val con1 = GraphEdge(this.fromNode, middleNode, this.cost / 2)
     val con2 = GraphEdge(middleNode, this.toNode, this.cost / 2)
     return listOf(con1, con2)
@@ -142,7 +145,7 @@ fun GeoHash.getGeoHashWithPrecision(precision: Int): String {
 
 
 fun List<Node>.getNodeWithPosition(position: Position): Node {
-    val node = this.find { it.geohash.contains(GeoHash.withBitPrecision(position.lat, position.lon, 64).point) }
+    val node = this.find { it.geohash.contains(GeoHash.withBitPrecision(position.lat, position.lon, 16).point) }
     return node ?: throw Exception("Did not find a node that covers this position: $position")
 }
 

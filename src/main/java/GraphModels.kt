@@ -49,7 +49,7 @@ class GraphEdge (
 
 class GraphPortNode (@SerializedName("name2") override val name: String,
                      @SerializedName("position2") override val position: Position,
-                     val polygon: Polygon,
+                     val klavenessPolygon: KlavenessPolygon,
                      val portId: String) : GraphNode(name, position) {
     override fun toString() = super.toString().replace("False", "True")
 }

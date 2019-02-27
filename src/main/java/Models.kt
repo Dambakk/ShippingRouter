@@ -127,7 +127,7 @@ data class Port(
 }
 
 
-data class Polygon(
+data class KlavenessPolygon(
         val name: String,
         val region: String,
         val subsection: String,
@@ -148,7 +148,8 @@ data class Polygon(
                     .split("))")[0].trim()
                     .split(" ")
                     .map { it.removeSuffix(",").toDouble() }
-                    .toPairedList(),
+                    .toPairedList()
+                    .flitPositions(),
             graphNodes = mutableListOf(),
             outerNodes = mutableListOf(),
             middleNodes = mutableListOf(),
@@ -166,6 +167,8 @@ data class Polygon(
             }
             return res
         }
+
+        fun List<Position>.flitPositions(): List<Position> = this.map { it.flip() }
     }
 }
 

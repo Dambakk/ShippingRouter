@@ -1,6 +1,5 @@
 import java.io.BufferedReader
 import java.io.FileReader
-import kotlin.reflect.full.createInstance
 
 interface ShippingObject
 
@@ -86,8 +85,8 @@ object FileHandler {
     }
 
 
-    fun readPolygonsFile(): List<Polygon> {
-        val polygons = mutableListOf<Polygon>()
+    fun readPolygonsFile(): List<KlavenessPolygon> {
+        val polygons = mutableListOf<KlavenessPolygon>()
 
         try {
             val fileReader = BufferedReader(FileReader(Config.polygonInputFile))
@@ -95,7 +94,7 @@ object FileHandler {
             var line = fileReader.readLine()
             while (line != null) {
                 val params = line.split(";")
-                polygons.add(Polygon(params))
+                polygons.add(KlavenessPolygon(params))
                 line = fileReader.readLine()
             }
         } catch (e: Exception) {
