@@ -57,7 +57,7 @@ object AStar {
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toInt())
 
 
-        val openList = mutableListOf<NodeRecord>(startRecord)
+        val openList = mutableListOf(startRecord)
         val closedList = mutableListOf<NodeRecord>()
 
         var currentNode: NodeRecord? = null
@@ -72,10 +72,10 @@ object AStar {
                 break
             }
 
-//            val connections = graph.getOutgoingConnectionsFrom(currentNode)
             val connections = graph.getConnections(currentNode)
             for (connection in connections) {
-                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode
+//                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
+                val endNode =  connection.toNode // Directed graph
                 val endNodeCost = currentNode.costSoFar + connection.cost
 
                 var endNodeRecord: NodeRecord?

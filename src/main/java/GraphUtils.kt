@@ -110,18 +110,23 @@ object GraphUtils {
             }
         }
 
+
         val filteredConnections = connections.filter {
             ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
                     ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
                     ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
         }
 
+        // Make the connections directed
+        val directedConnections = filteredConnections
+                .map { listOf(it, it.createFlipped()) }
+                .flatten()
 
-        val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
+//        val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
 
 //        val graph = Graph(connections, allNodes)
 //        val graph = Graph(filteredConnections, filteredNodes + portPoints)
-        val graph = Graph(filteredConnections, pointsAndPorts)
+        val graph = Graph(directedConnections, pointsAndPorts)
 
         return graph
 

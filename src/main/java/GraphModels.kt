@@ -11,6 +11,9 @@ class GraphEdge (
         var toNode: GraphNode,
         val cost: Int
 )  {
+
+    fun createFlipped() = GraphEdge(toNode, fromNode, cost)
+
     override fun equals(other: Any?): Boolean {
         return other is GraphEdge &&
                 (this.fromNode == other.fromNode && this.toNode == other.toNode ||

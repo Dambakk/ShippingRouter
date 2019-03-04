@@ -93,7 +93,7 @@ fun main(args: Array<String>) {
     val goal = graph.getPortById(Config.goalPortId)
 
     val path = AStar.startAStar(graph, start, goal)
-    println(path)
+    println("Path: $path")
 
     println("Start: ${start.name}")
     for (item in path!!) {
