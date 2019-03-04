@@ -86,7 +86,7 @@ object GeoJson {
 {
   "type": "FeatureCollection",
   "features": [
-    ELEMENTS
+        ELEMENTS
   ]
 }
     """.trimIndent()
@@ -106,8 +106,6 @@ object GeoJson {
     }
     """.trimIndent()
 
-    fun getGeoJsonBaseTemplate() = templateGeoJsonBase
-
     fun getGeoJson(elements: String, properties: String) = templateGeoJsonBase
             .replace("ELEMENTS", elements)
             .replace("PROPERTIES", properties)
@@ -115,6 +113,8 @@ object GeoJson {
     fun createGeoJsonElement(type: GeoJsonType, coordinates: String) = templateGeoJsonElement
             .replace("GEOJSONTYPE", type.typeName)
             .replace("COORDINATES", coordinates)
+
+    fun pointToGeoJson(point: GraphNode) = createGeoJsonElement(GeoJsonType.POINT, "[${point.position.lon}, ${point.position.lat}]")
 
 
     fun pathToGeoJson(path: List<GraphEdge>): String {
@@ -128,7 +128,7 @@ object GeoJson {
     }
 
 
-    fun readGeoJSON(path: String): List<Polygon> {
+    fun readWorldCountriesGeoJSON(path: String): List<Polygon> {
         val gson = Gson()
         val reader = JsonReader(FileReader(path))
         val data = gson.fromJson<GeoJsonObject>(reader, GeoJsonObject::class.java)

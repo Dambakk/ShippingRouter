@@ -99,15 +99,10 @@ object GraphUtils {
                 .toSet()
                 .toList()
 
-        val pointsAndPorts = groupedPoints + portPoints
-
+        // Make sure all connections use the same node (grouped point)
         connections.forEach {
-            if (it.fromNode !is GraphPortNode) {
-                it.fromNode = pointsAndPorts.find { n -> n.geohash.contains(it.fromNode.geohash.point) } ?: it.fromNode
-            }
-            if (it.toNode !is GraphPortNode) {
-                it.toNode = pointsAndPorts.find { n -> n.geohash.contains(it.toNode.geohash.point) } ?: it.toNode
-            }
+            it.fromNode = groupedPoints.find { n -> n.geohash.contains(it.fromNode.geohash.point) } ?: it.fromNode
+            it.toNode = groupedPoints.find { n -> n.geohash.contains(it.toNode.geohash.point) } ?: it.toNode
         }
 
 
@@ -126,7 +121,7 @@ object GraphUtils {
 
 //        val graph = Graph(connections, allNodes)
 //        val graph = Graph(filteredConnections, filteredNodes + portPoints)
-        val graph = Graph(directedConnections, pointsAndPorts)
+        val graph = Graph(directedConnections, groupedPoints + portPoints)
 
         return graph
 

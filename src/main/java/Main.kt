@@ -1,17 +1,13 @@
 import ch.hsr.geohash.GeoHash
-import org.geotools.data.DataStoreFinder.getDataStore
-import org.geotools.feature.collection.BaseSimpleFeatureCollection
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Point
-import java.io.File
-import java.util.*
 
 
 fun main(args: Array<String>) {
 
 //    readShapeFile()
 
-    val worldCountries = GeoJson.readGeoJSON(Config.worldCountriesGeoJsonFile)
+    val startTime = System.currentTimeMillis()
+
+    val worldCountries = GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
 //    val test = FileInputStream("world-borders.shp").channel
 
 //    val f = File("world-borders.shp")
@@ -92,8 +88,12 @@ fun main(args: Array<String>) {
     val start = graph.getPortById(Config.startPortId)
     val goal = graph.getPortById(Config.goalPortId)
 
+    val intermediateTime = System.currentTimeMillis()
+
     val path = AStar.startAStar(graph, start, goal)
     println("Path: $path")
+
+    val endTime = System.currentTimeMillis()
 
     println("Start: ${start.name}")
     for (item in path!!) {
@@ -105,6 +105,10 @@ fun main(args: Array<String>) {
     val geoJson = GeoJson.pathToGeoJson(path)
     println(geoJson)
     writeJsonToFile(geoJson)
+
+    println("Preparation time: \t${(intermediateTime - startTime)/1000.0} seconds")
+    println("A-star duration: \t${(endTime- intermediateTime)/1000.0} seconds")
+    println("Total duration: \t${(endTime- startTime)/1000.0} seconds")
 
     println("Done")
 
