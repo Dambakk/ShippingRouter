@@ -13,12 +13,6 @@ object Utils {
         return gson.toJson(input)
     }
 
-//    fun toJsonString(input: List<GraphEdge>): String {
-//        val gson = Gson()
-//        val newList = input.r
-//    }
-
-
 }
 
 /**
@@ -120,7 +114,7 @@ infix fun Position.isIn(klavenessPolygon: KlavenessPolygon): Boolean {
 
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
-    val middleNode = Node(middlePos, this.fromNode.name, isPort = false, geohash = GeoHash.withBitPrecision(middlePos.lat, middlePos.lon, 64))
+    val middleNode = GraphNode(this.fromNode.name, middlePos)
     val con1 = GraphEdge(this.fromNode, middleNode, this.cost / 2)
     val con2 = GraphEdge(middleNode, this.toNode, this.cost / 2)
     return listOf(con1, con2)
@@ -144,18 +138,11 @@ fun GeoHash.getGeoHashWithPrecision(precision: Int): String {
 }
 
 
-fun List<Node>.getNodeWithPosition(position: Position): Node {
+fun Set<GraphNode>.getNodeWithPosition(position: Position): GraphNode {
     val node = this.find { it.geohash.contains(GeoHash.withBitPrecision(position.lat, position.lon, 16).point) }
     return node ?: throw Exception("Did not find a node that covers this position: $position")
 }
 
-
-fun List<ShippingEdge>.toJson(): String {
-    this.map {
-
-    }
-    return "To be implemented"
-}
 
 fun writeJsonToFile(geoJson: String) {
     val file = File(Config.geoJsonFilePath)
@@ -163,9 +150,4 @@ fun writeJsonToFile(geoJson: String) {
     println("Written geoJson to ${Config.geoJsonFilePath}.")
 }
 
-
-fun Position.isOnLand(): Boolean {
-
-    return false
-}
 

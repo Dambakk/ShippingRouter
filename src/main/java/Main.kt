@@ -46,7 +46,7 @@ fun main(args: Array<String>) {
     val portPoints = FileHandler.readPortsFile()
             .filter { !it.deleted }
             .filter { it.portId in Config.portIdsOfInterest }
-            .map { Node(it.position, it.name, true, GeoHash.withBitPrecision(it.position.lat, it.position.lon, 64), it.portId) }
+            .map { GraphPortNode(it.name, it.position, null, it.portId) }
             .also { println("Number of ports: ${it.size}") }
 
     portPoints.forEach {
@@ -61,10 +61,8 @@ fun main(args: Array<String>) {
             .asSequence()
             .map { polygon ->
                 polygon.polygonPoints.map { position ->
-//                    val pos = position.flip()
                     val pos = position
-                    assert(pos.lat in (-90.0..90.0) && pos.lon in (-180.0..180.0)) {"Port position invalid: $pos, ${polygon.name}"}
-                    Node(pos, polygon.name, geohash = GeoHash.withBitPrecision(pos.lat, pos.lon, 64))
+                    GraphNode(polygon.name, pos)
                 }
             }
             .flatten()
@@ -74,34 +72,25 @@ fun main(args: Array<String>) {
         assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Node position invalid: ${it.position}"}
     }
 
-//    val point2 = points
-//            .filter { Coordinate(it.position.lon, it.position.lat) notIn worldCountries } // Filter points on land
-//            .toList()
-
-
     val allPoints = points + portPoints
 
     println("Total number of nodes: ${allPoints.size}")
 
 
-    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(16) }
+    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(32) }
             .map { (key, list) ->
                 val newName = list.map { it.name }.toSet().joinToString(separator = "+")
-                Node(list.first().position, newName, list.first().isPort, GeoHash.fromBinaryString(key))
+                GraphNode(newName, list.first().position, GeoHash.fromBinaryString(key))
             }
+            .toSet()
 
     val pointsJsonString = Utils.toJsonString(allPoints)
     println(pointsJsonString)
 
-//    println(pointsJsonString)
-
     val graph = GraphUtils.createGraph(polygons, portPoints, groupedPoints, worldCountries)
-    println(graph)
 
-
-    val start = graph.getPortById(Config.startPortId) // Taixing
-//    val goal = graph.nodes[12] // Manila
-    val goal = graph.getPortById(Config.goalPortId) // Lake charles
+    val start = graph.getPortById(Config.startPortId)
+    val goal = graph.getPortById(Config.goalPortId)
 
     val path = AStar.startAStar(graph, start, goal)
     println(path)

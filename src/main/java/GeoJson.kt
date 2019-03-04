@@ -13,7 +13,7 @@ interface GeoJsonInterface {
 
 infix fun Coordinate.notIn(countries: List<Polygon>) = !countries.any { it.contains(GeometryFactory().createPoint(this)) }
 
-infix fun ShippingNode.notIn(countries: List<Polygon>) = Coordinate(this.position.lon, this.position.lat) notIn countries
+infix fun GraphNode.notIn(countries: List<Polygon>) = Coordinate(this.position.lon, this.position.lat) notIn countries
 //        !countries.any { it.contains(GeometryFactory().createPoint(Coordinate(this.position.lon, this.position.lat))) }
 
 
@@ -117,7 +117,7 @@ object GeoJson {
             .replace("COORDINATES", coordinates)
 
 
-    fun pathToGeoJson(path: List<ShippingEdge>): String {
+    fun pathToGeoJson(path: List<GraphEdge>): String {
         val coords = path.map { item ->
             "[${item.fromNode.position.lon}, ${item.fromNode.position.lat}],[${item.toNode.position.lon}, ${item.toNode.position.lat}]"
         }.toString()

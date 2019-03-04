@@ -4,40 +4,24 @@ import org.locationtech.jts.geom.Polygon
 object GraphUtils {
 
 
-    fun createGraph(klavenessPolygons: List<KlavenessPolygon>, ports: List<Node>, sanitizedGroupedPoints: List<Node>, worldCountries: List<Polygon>): Graph {
+    fun createGraph(klavenessPolygons: List<KlavenessPolygon>, ports: List<GraphPortNode>, sanitizedGroupedPoints: Set<GraphNode>, worldCountries: List<Polygon>): Graph {
 
 
         // 1) Generate outer connection on each klavenessPolygon:
 
-//        val connections = klavenessPolygons.map { klavenessPolygon ->
-//            klavenessPolygon.polygonPoints
-//                    .map { position -> GraphNode(klavenessPolygon.name, position) }
-//                    .map { position -> sanitizedGroupedPoints.getNodeWithPosition(position.flip()) }
-//                    .zipWithNext()
-//                    .map { GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) }
-//                    .map {
-//                        val res = it.splitInTwo()
-//                        klavenessPolygon.graphNodes.add(res.first().fromNode)
-//                        klavenessPolygon.graphNodes.add(res.first().toNode) // This is the middle node
-//                        res
-//                    }
-//                    .flatten()
-//        }.flatten().toMutableList()
-
-
         val connections = klavenessPolygons.map { polygon ->
             polygon.polygonPoints
-//                    .map { position -> GraphNode(klavenessPolygon.name, position) }
+                    .asSequence()
                     .map { position -> sanitizedGroupedPoints.getNodeWithPosition(position) }
                     .zipWithNext()
                     .map { GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) }
                     .map {
                         val res = it.splitInTwo()
-//                        klavenessPolygon.graphNodes.add(res.first().fromNode)
                         polygon.graphNodes.add(res.first().toNode) // This is the middle node
                         res
                     }
                     .flatten()
+                    .toList()
         }
                 .flatten()
                 .toMutableList()
@@ -50,9 +34,8 @@ object GraphUtils {
             val centerPos = polygon.getCenterPosition()
             assert(centerPos.lat in (-90.0..90.0) && centerPos.lon in (-180.0..180.0)) { "Center position invalid: $centerPos, ${polygon.name}" }
 
-//            val centerPos2 = centerPos.flip()
-            val centerNode = Node(centerPos, polygon.name, isPort = false, geohash = GeoHash.withBitPrecision(centerPos.lat, centerPos.lon, 64))
-            val newNodes = mutableListOf<ShippingNode>()
+            val centerNode = GraphNode(polygon.name, centerPos, geohash = GeoHash.withBitPrecision(centerPos.lat, centerPos.lon, 64))
+            val newNodes = mutableListOf<GraphNode>()
             polygon.graphNodes.forEach {
                 val connection = GraphEdge(centerNode, it, centerNode.position.distanceFrom(it.position).toInt()).splitInTwo()
 //                klavenessPolygon.graphNodes.add(split.first().fromNode)
@@ -72,9 +55,9 @@ object GraphUtils {
 
         klavenessPolygons.forEach { polygon ->
             polygon.middleNodes.add(polygon.middleNodes.first())
-            polygon.middleNodes.zipWithNext { a, b ->
-                connections.add(GraphEdge(a, b, a.position.distanceFrom(b.position).toInt()))
-            }
+//            polygon.middleNodes.zipWithNext { a, b ->
+//                connections.add(GraphEdge(a, b, a.position.distanceFrom(b.position).toInt()))
+//            }
         }
 
 
@@ -90,20 +73,13 @@ object GraphUtils {
         }
 
         portPoints.forEach { port ->
-            port.klavenessPolygon.graphNodes.forEach {
+            port.klavenessPolygon!!.graphNodes.forEach {
                 val connection = GraphEdge(port, it, port.position.distanceFrom(it.position).toInt())
                 connections.add(connection)
             }
         }
 
         println("4) Generated connections from ports to nodes in klavenessPolygon that port belongs to. Now, a total of ${connections.size} connections")
-
-
-//        val newConnections = connections.filterIndexed {i, edge ->
-//            connections.subList(i, connections.size).contains(edge)
-//        }
-//
-//        println("Size of newConnections: ${newConnections.size}")
 
 
         println("5) Remove points on land and edges connected to these ports.")
@@ -114,17 +90,38 @@ object GraphUtils {
                 .flatten()
                 .filter { it notIn worldCountries }
 
+        val groupedPoints = filteredNodes
+                .groupBy { GeoHash.withBitPrecision(it.position.lat, it.position.lon, 16) }
+                .map { (key, list) ->
+                    val newName = list.map { it.name }.toSet().joinToString(separator = "+")
+                    GraphNode(newName, list.first().position, GeoHash.withBitPrecision(list.first().position.lat, list.first().position.lon, 16))
+                }
+                .toSet()
+                .toList()
+
+        val pointsAndPorts = groupedPoints + portPoints
+
+        connections.forEach {
+            if (it.fromNode !is GraphPortNode) {
+                it.fromNode = pointsAndPorts.find { n -> n.geohash.contains(it.fromNode.geohash.point) } ?: it.fromNode
+            }
+            if (it.toNode !is GraphPortNode) {
+                it.toNode = pointsAndPorts.find { n -> n.geohash.contains(it.toNode.geohash.point) } ?: it.toNode
+            }
+        }
+
         val filteredConnections = connections.filter {
             ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
                     ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
-                    ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode ))
+                    ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
         }
 
 
         val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
 
 //        val graph = Graph(connections, allNodes)
-        val graph = Graph(filteredConnections, filteredNodes + portPoints)
+//        val graph = Graph(filteredConnections, filteredNodes + portPoints)
+        val graph = Graph(filteredConnections, pointsAndPorts)
 
         return graph
 

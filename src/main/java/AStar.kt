@@ -1,10 +1,10 @@
 data class NodeRecord(
-        var node: ShippingNode,
-        var connection: ShippingEdge?,
+        var node: GraphNode,
+        var connection: GraphEdge?,
         var costSoFar: Int,
         var estimatedTotalCost: Int
 ) {
-    constructor(node: ShippingNode) : this(node, null, -1, -1)
+    constructor(node: GraphNode) : this(node, null, -1, -1)
 
     fun flipConnectionNodes(): NodeRecord {
         val tmp = connection?.fromNode
@@ -20,25 +20,25 @@ fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {
     return this.minBy { it.estimatedTotalCost }!!
 }
 
-fun ShippingGraph.getConnections(node: NodeRecord): Set<ShippingEdge> {
+fun Graph.getConnections(node: NodeRecord): Set<GraphEdge> {
     return this.edges.filter {
         it.fromNode == node.node ||
                 it.toNode == node.node
     }.toSet()
 }
 
-fun ShippingGraph.getOutgoingConnectionsFrom(node: NodeRecord): Set<ShippingEdge> {
+fun Graph.getOutgoingConnectionsFrom(node: NodeRecord): Set<GraphEdge> {
     return this.edges.filter {
         it.fromNode == node.node
     }.toSet()
 }
 
-fun List<NodeRecord>.containsNode(node: ShippingNode): Boolean {
+fun List<NodeRecord>.containsNode(node: GraphNode): Boolean {
     return this.find { it.node == node } != null
 }
 
 
-fun List<NodeRecord>.getNodeRecordOfNode(node: ShippingNode): NodeRecord {
+fun List<NodeRecord>.getNodeRecordOfNode(node: GraphNode): NodeRecord {
     return this.find { it.node == node }!!
 }
 
@@ -46,7 +46,7 @@ fun List<NodeRecord>.getNodeRecordOfNode(node: ShippingNode): NodeRecord {
 object AStar {
 
 
-    fun startAStar(graph: ShippingGraph, startNode: ShippingNode, goalNode: ShippingNode): MutableList<ShippingEdge>? {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode): MutableList<GraphEdge>? {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -140,7 +140,7 @@ object AStar {
 
         } else {
             //Did find a valid path
-            val path = mutableListOf<ShippingEdge>()
+            val path = mutableListOf<GraphEdge>()
             while (currentNode!!.node != startNode) {
                 path.add(currentNode.connection!!)
                 closedList.remove(currentNode)

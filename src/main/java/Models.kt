@@ -133,10 +133,10 @@ data class KlavenessPolygon(
         val subsection: String,
         val basin: String,
         val polygonPoints: List<Position>,
-        var graphNodes: MutableList<ShippingNode>,
-        var outerNodes: MutableList<ShippingNode>,
-        var middleNodes: MutableList<ShippingNode>,
-        var centerNode: ShippingNode
+        var graphNodes: MutableList<GraphNode>,
+        var outerNodes: MutableList<GraphNode>,
+        var middleNodes: MutableList<GraphNode>,
+        var centerNode: GraphNode
 ) {
     constructor(params: List<String>) : this(
             name = params[0],
@@ -171,17 +171,4 @@ data class KlavenessPolygon(
         fun List<Position>.flitPositions(): List<Position> = this.map { it.flip() }
     }
 }
-
-data class Node(
-        override val position: Position,
-        override val name: String,
-        val isPort: Boolean = false,
-        val geohash: GeoHash,
-        val portId: String = ""
-): ShippingNode {
-
-    override fun toString() = "($name $position isPort=$isPort)"
-
-}
-
 

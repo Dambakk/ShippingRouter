@@ -1,43 +1,16 @@
-import com.google.gson.annotations.SerializedName
-
-/**
- *  Representation of a graph.
- */
-interface ShippingGraph {
-    val edges: List<ShippingEdge>
-    val nodes: List<ShippingNode>
-}
-
-/**
- * An edge is a connection between two nodes in a graph.
- */
-interface ShippingEdge {
-    var fromNode: ShippingNode
-    var toNode: ShippingNode
-    val cost: Int
-}
-
-/**
- * A node in a graph. Has a label/name and a position.
- */
-interface ShippingNode {
-    val name: String
-    val position: Position
-}
+import ch.hsr.geohash.GeoHash
 
 
 class Graph(
-        override val edges: List<ShippingEdge>,
-        override val nodes: List<ShippingNode>
-) : ShippingGraph
-
-
+        val edges: List<GraphEdge>,
+        val nodes: List<GraphNode>
+)
 
 class GraphEdge (
-        override var fromNode: ShippingNode,
-        override var toNode: ShippingNode,
-        override val cost: Int
-) : ShippingEdge {
+        var fromNode: GraphNode,
+        var toNode: GraphNode,
+        val cost: Int
+)  {
     override fun equals(other: Any?): Boolean {
         return other is GraphEdge &&
                 (this.fromNode == other.fromNode && this.toNode == other.toNode ||
@@ -47,17 +20,24 @@ class GraphEdge (
     override fun toString() = "[$fromNode - $toNode]"
 }
 
-class GraphPortNode (@SerializedName("name2") override val name: String,
-                     @SerializedName("position2") override val position: Position,
-                     val klavenessPolygon: KlavenessPolygon,
-                     val portId: String) : GraphNode(name, position) {
+class GraphPortNode (name: String,
+                     position: Position,
+                     val klavenessPolygon: KlavenessPolygon?,
+                     val portId: String
+) : GraphNode(name, position, GeoHash.withBitPrecision(position.lat, position.lon, 64)) {
+
     override fun toString() = super.toString().replace("False", "True")
 }
 
 open class GraphNode (
-        override val name: String,
-        override val position: Position
-) : ShippingNode, GeoJsonInterface {
+        val name: String,
+        val position: Position,
+        val geohash: GeoHash = GeoHash.withBitPrecision(position.lat, position.lon, 64)
+): GeoJsonInterface {
+
+    init {
+        assert(position.lat in (-90.0..90.0) && position.lon in (-180.0..180.0)) {"Port position invalid: $position, $name"}
+    }
 
     override fun toGeoJsonObject() = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${position.lat}, ${position.lon}]")
 
