@@ -175,3 +175,12 @@ data class KlavenessPolygon(
     }
 }
 
+
+
+data class Ship (
+        val name: String,
+        val maximumDWT: Int,
+        val operatingCostEmpyt: Int,
+        val operatingCostLoaded: Int
+)
+

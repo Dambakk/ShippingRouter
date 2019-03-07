@@ -1,7 +1,8 @@
 import Models.Graph
 import Models.GraphEdge
 import Models.GraphNode
-import Utilities.distanceFrom
+import Models.Ship
+import Utilities.*
 
 data class NodeRecord(
         var node: GraphNode,
@@ -51,13 +52,71 @@ fun List<NodeRecord>.getNodeRecordOfNode(node: GraphNode): NodeRecord {
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode): MutableList<GraphEdge>? {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPorts: List<String>, ship: Ship): List<GraphEdge>? {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
 
 
+
+        val start = graph.getPortById(Config.startPortId)
+
+        val loadingPorts = possibleLoadingPorts.map { graph.getPortById(it) }
+
+
+        val res = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Int>>()
+
+        loadingPorts.forEach { port ->
+            println(port)
+            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port)!!
+            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode)!!
+
+            res[port] = Pair((path1 + path2.asIterable()), cost1 + cost2)
+
+        }
+
+        val sortedResult = res.toList().sortedByDescending <Pair<GraphNode, Pair<List<GraphEdge>, Int>>, Int> { it.second.second }.toMap()
+
+
+
+        val geoJsonElements = mutableListOf<String>()
+        var thickness = 2
+
+        sortedResult.forEach { k, v ->
+            val color = getRandomColor()
+            val props = """
+                "marker-color": "$color",
+                "stroke":"$color"
+            """.trimIndent()
+            val geoJsonElement = Utilities.GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString())
+            val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
+            geoJsonElements.add(geoJsonElement)
+            geoJsonElements.add(portPoint)
+            thickness += 2
+        }
+
+        val startPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${start.position.lon}, ${start.position.lat}]")
+        val goalPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${goalNode.position.lon}, ${goalNode.position.lat}]")
+        geoJsonElements.add(startPin)
+        geoJsonElements.add(goalPin)
+
+
+        val elements = geoJsonElements.joinToString(separator = ",")
+
+        val geoJson = GeoJson.getGeoJson(elements)
+        print(geoJson)
+
+
+//        val res = graph.performPathfindingBetweenPorts(startNode, goalNode)
+
+        return null
+
+    }
+
+
+
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode): Pair<MutableList<GraphEdge>, Int>? {
         //TODO: Replace estimatedTotalCost with heuristic function
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toInt())
 
@@ -77,7 +136,7 @@ object AStar {
                 break
             }
 
-            val connections = graph.getConnections(currentNode)
+            val connections = getConnections(currentNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode =  connection.toNode // Directed graph
@@ -144,6 +203,8 @@ object AStar {
             null
 
         } else {
+
+            val totalCost = currentNode.costSoFar
             //Did find a valid path
             val path = mutableListOf<GraphEdge>()
             while (currentNode!!.node != startNode) {
@@ -155,8 +216,8 @@ object AStar {
                                     it.node == currentNode!!.connection!!.toNode)
                 }!!
             }
-            path.asReversed()
+            Pair(path.asReversed(), totalCost)
         }
-
     }
+
 }

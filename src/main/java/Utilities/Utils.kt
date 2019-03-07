@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import java.awt.Point
 import java.io.File
 import kotlin.Exception
+import kotlin.random.Random
 
 object Utils {
 
@@ -153,3 +154,9 @@ fun writeJsonToFile(geoJson: String) {
 }
 
 
+fun getRandomColor(): String {
+    val a = Random.nextInt(255).toString(16)
+    val b = Random.nextInt(255).toString(16)
+    val c = Random.nextInt(255).toString(16)
+    return "#$a$b$c"
+}

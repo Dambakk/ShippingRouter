@@ -1,5 +1,6 @@
 import Models.GraphNode
 import Models.GraphPortNode
+import Models.Ship
 import Utilities.*
 import ch.hsr.geohash.GeoHash
 
@@ -91,9 +92,14 @@ fun main() {
     val start = graph.getPortById(Config.startPortId)
     val goal = graph.getPortById(Config.goalPortId)
 
+
+
+    val ship = Ship("Test ship 1", 1000, 25, 100)
+    val possibleLoadingPorts = listOf("ARRGA", "QAMES", "JPETA", "USCRP")
+
     val intermediateTime = System.currentTimeMillis()
 
-    val path = AStar.startAStar(graph, start, goal)
+    val path = AStar.startAStar(graph, start, goal, possibleLoadingPorts, ship)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()

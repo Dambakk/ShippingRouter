@@ -110,7 +110,7 @@ object GeoJson {
     }
     """.trimIndent()
 
-    fun getGeoJson(elements: String, properties: String) = templateGeoJsonBase
+    fun getGeoJson(elements: String, properties: String = "") = templateGeoJsonBase
             .replace("ELEMENTS", elements)
             .replace("PROPERTIES", properties)
 
@@ -135,7 +135,7 @@ object GeoJson {
 
         val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords, props)
 
-        return getGeoJson(element, "")
+        return element //getGeoJson(element, "")
     }
 
 
