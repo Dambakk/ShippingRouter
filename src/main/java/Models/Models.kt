@@ -1,4 +1,7 @@
-import ch.hsr.geohash.GeoHash
+package Models
+
+import Utilities.ShippingObject
+import Utilities.flip
 
 fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 

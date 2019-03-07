@@ -1,11 +1,13 @@
+package Utilities
+
+import Models.GraphEdge
+import Models.GraphNode
+import Models.Position
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
-import org.fusesource.jansi.Ansi
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Point
 import org.locationtech.jts.geom.Polygon
-import java.awt.Color
 import java.io.FileReader
 
 interface GeoJsonInterface {
@@ -68,7 +70,7 @@ class GeoJsonGeometry(val type: String,
 
     val coordinates: List<List<Any>> = coordinates
         get() = when (type) {
-            "KlavenessPolygon" -> field as List<List<Double>>
+            "Models.KlavenessPolygon" -> field as List<List<Double>>
             "MultiPolygon" -> field as List<List<List<Double>>>
             else -> field as List<List<Double>>
         }
@@ -78,7 +80,7 @@ class GeoJsonGeometry(val type: String,
 enum class GeoJsonType(val typeName: String) {
     LINE_STRING("LineString"),
     POINT("Point"),
-    POLYGON("KlavenessPolygon"),
+    POLYGON("Models.KlavenessPolygon"),
     MULTIPOLYGON("MultiPolygon")
 }
 

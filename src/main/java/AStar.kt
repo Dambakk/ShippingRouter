@@ -1,3 +1,8 @@
+import Models.Graph
+import Models.GraphEdge
+import Models.GraphNode
+import Utilities.distanceFrom
+
 data class NodeRecord(
         var node: GraphNode,
         var connection: GraphEdge?,

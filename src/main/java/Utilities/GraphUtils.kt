@@ -1,3 +1,6 @@
+package Utilities
+
+import Models.*
 import ch.hsr.geohash.GeoHash
 import org.locationtech.jts.geom.Polygon
 
@@ -73,7 +76,7 @@ object GraphUtils {
 //
 //                val newCs = neighbours.map { n ->
 //                    val t = if (n.fromNode == it) n.toNode else n.fromNode
-//                    GraphEdge(it, t, it.position.distanceFrom(t.position).toInt())
+//                    Models.GraphEdge(it, t, it.position.Utilities.distanceFrom(t.position).Models.toInt())
 //                }
 //                connections.addAll(newCs)
 //            }
@@ -140,8 +143,8 @@ object GraphUtils {
 
 //        val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
 
-//        val graph = Graph(connections, allNodes)
-//        val graph = Graph(filteredConnections, filteredNodes + portPoints)
+//        val graph = Models.Graph(connections, allNodes)
+//        val graph = Models.Graph(filteredConnections, filteredNodes + portPoints)
         val graph = Graph(directedConnections, groupedPoints + portPoints)
 
         return graph

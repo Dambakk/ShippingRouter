@@ -1,3 +1,7 @@
+package Utilities
+
+import Config
+import Models.*
 import ch.hsr.geohash.GeoHash
 import com.google.gson.Gson
 import java.awt.Point
@@ -106,7 +110,7 @@ infix fun Position.isIn(klavenessPolygon: KlavenessPolygon): Boolean {
     return javaPolygon.contains(Point(this.lat.toInt(), this.lon.toInt()))
 }
 
-//infix fun Position.isIn(klavenessPolygons: List<KlavenessPolygon>): Boolean {
+//infix fun Models.Position.Utilities.isIn(klavenessPolygons: List<Models.KlavenessPolygon>): Boolean {
 //    klavenessPolygons.any { it.contains(GeometryFactory().createPoint(Coordinate(this.lat, this.lon))) }
 //}
 

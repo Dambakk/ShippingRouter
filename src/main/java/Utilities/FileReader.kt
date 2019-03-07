@@ -1,3 +1,9 @@
+package Utilities
+
+import Config
+import Models.KlavenessPolygon
+import Models.Port
+import Models.TradePattern
 import java.io.BufferedReader
 import java.io.FileReader
 
@@ -6,7 +12,7 @@ interface ShippingObject
 object FileHandler {
 
     /*
-    inline fun <reified T>fileParser(path: String, delimiter: String, containsHeader: Boolean = true, type: Class<ShippingObject>): List<Any> {
+    inline fun <reified T>fileParser(path: String, delimiter: String, containsHeader: Boolean = true, type: Class<Utilities.ShippingObject>): List<Any> {
         val list = mutableListOf<T>()
 
         try {
@@ -32,8 +38,8 @@ object FileHandler {
         return list
     }
 
-    fun readTradePatternsFile(): List<TradePattern> {
-        return fileParser("assets/trade_patterns.csv", ",", true, TradePattern)
+    fun readTradePatternsFile(): List<Models.TradePattern> {
+        return fileParser("assets/trade_patterns.csv", ",", true, Models.TradePattern)
     }
     */
 
