@@ -70,7 +70,7 @@ class GeoJsonGeometry(val type: String,
 
     val coordinates: List<List<Any>> = coordinates
         get() = when (type) {
-            "Models.KlavenessPolygon" -> field as List<List<Double>>
+            "Polygon" -> field as List<List<Double>>
             "MultiPolygon" -> field as List<List<List<Double>>>
             else -> field as List<List<Double>>
         }
@@ -80,7 +80,7 @@ class GeoJsonGeometry(val type: String,
 enum class GeoJsonType(val typeName: String) {
     LINE_STRING("LineString"),
     POINT("Point"),
-    POLYGON("Models.KlavenessPolygon"),
+    POLYGON("Polygon"),
     MULTIPOLYGON("MultiPolygon")
 }
 

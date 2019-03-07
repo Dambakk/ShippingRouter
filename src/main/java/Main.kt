@@ -49,7 +49,7 @@ fun main() {
             .also { println("Number of ports: ${it.size}") }
 
     portPoints.forEach {
-        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Models.Port position invalid: ${it.position}, ${it.portId}"}
+        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Port position invalid: ${it.position}, ${it.portId}"}
     }
 
 

@@ -44,7 +44,7 @@ open class GraphNode (
 ): GeoJsonInterface {
 
     init {
-        assert(position.lat in (-90.0..90.0) && position.lon in (-180.0..180.0)) {"Models.Port position invalid: $position, $name"}
+        assert(position.lat in (-90.0..90.0) && position.lon in (-180.0..180.0)) {"Port position invalid: $position, $name"}
     }
 
     override fun toGeoJsonObject() = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${position.lat}, ${position.lon}]")
