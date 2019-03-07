@@ -1,9 +1,11 @@
 import com.google.gson.Gson
 import com.google.gson.stream.JsonReader
+import org.fusesource.jansi.Ansi
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Point
 import org.locationtech.jts.geom.Polygon
+import java.awt.Color
 import java.io.FileReader
 
 interface GeoJsonInterface {
@@ -110,19 +112,26 @@ object GeoJson {
             .replace("ELEMENTS", elements)
             .replace("PROPERTIES", properties)
 
-    fun createGeoJsonElement(type: GeoJsonType, coordinates: String) = templateGeoJsonElement
+    fun createGeoJsonElement(type: GeoJsonType, coordinates: String, props: String = "") = templateGeoJsonElement
             .replace("GEOJSONTYPE", type.typeName)
             .replace("COORDINATES", coordinates)
+            .replace("PROPERTIES", props)
 
     fun pointToGeoJson(point: GraphNode) = createGeoJsonElement(GeoJsonType.POINT, "[${point.position.lon}, ${point.position.lat}]")
 
 
-    fun pathToGeoJson(path: List<GraphEdge>): String {
+    fun pathToGeoJson(path: List<GraphEdge>, color: String = "#000000", thickness: String = "5"): String {
         val coords = path.map { item ->
             "[${item.fromNode.position.lon}, ${item.fromNode.position.lat}],[${item.toNode.position.lon}, ${item.toNode.position.lat}]"
         }.toString()
 
-        val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords)
+        val props = """
+                "stroke": "$color",
+                "stroke-width": "$thickness",
+                "stroke-opacity": 1
+        """.trimIndent()
+
+        val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords, props)
 
         return getGeoJson(element, "")
     }

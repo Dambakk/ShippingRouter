@@ -1,7 +1,5 @@
 import ch.hsr.geohash.GeoHash
 import com.google.gson.Gson
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
 import java.awt.Point
 import java.io.File
 import kotlin.Exception
@@ -115,8 +113,8 @@ infix fun Position.isIn(klavenessPolygon: KlavenessPolygon): Boolean {
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
     val middleNode = GraphNode(this.fromNode.name, middlePos)
-    val con1 = GraphEdge(this.fromNode, middleNode, this.cost / 2)
-    val con2 = GraphEdge(middleNode, this.toNode, this.cost / 2)
+    val con1 = GraphEdge(this.fromNode, middleNode, this.distance / 2)
+    val con2 = GraphEdge(middleNode, this.toNode, this.distance / 2)
     return listOf(con1, con2)
 }
 

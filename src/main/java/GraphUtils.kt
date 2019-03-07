@@ -55,10 +55,29 @@ object GraphUtils {
 
         klavenessPolygons.forEach { polygon ->
             polygon.middleNodes.add(polygon.middleNodes.first())
-//            polygon.middleNodes.zipWithNext { a, b ->
-//                connections.add(GraphEdge(a, b, a.position.distanceFrom(b.position).toInt()))
-//            }
         }
+
+        /**
+         *  This will generate connections between the middel nodes and the neighbouring outer nodes.
+         *
+         *  However, it will generate many connections that travels across land. I need to remove such connections
+         *  before i can enable this again.
+         */
+//        klavenessPolygons.forEach { polygon ->
+//            polygon.middleNodes.forEach {
+//                val outerNode = connections.find { c -> c.fromNode == it }!!.toNode
+//                val neighbours = connections.filter { c ->
+//                            (c.fromNode == outerNode && c.toNode != it) ||
+//                            (c.toNode == outerNode && c.fromNode != it)
+//                }
+//
+//                val newCs = neighbours.map { n ->
+//                    val t = if (n.fromNode == it) n.toNode else n.fromNode
+//                    GraphEdge(it, t, it.position.distanceFrom(t.position).toInt())
+//                }
+//                connections.addAll(newCs)
+//            }
+//        }
 
 
         println("3) Generated connections from each center node to corresponding klavenessPolygon nodes. Now, a total of ${connections.size} connections")
@@ -116,6 +135,8 @@ object GraphUtils {
         val directedConnections = filteredConnections
                 .map { listOf(it, it.createFlipped()) }
                 .flatten()
+
+        println("6) Remove edges that connects to nodes on land and make graph directed. Now, a total of ${directedConnections.size} connections")
 
 //        val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
 

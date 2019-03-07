@@ -9,10 +9,10 @@ class Graph(
 class GraphEdge (
         var fromNode: GraphNode,
         var toNode: GraphNode,
-        val cost: Int
+        val distance: Int
 )  {
 
-    fun createFlipped() = GraphEdge(toNode, fromNode, cost)
+    fun createFlipped() = GraphEdge(toNode, fromNode, distance)
 
     override fun equals(other: Any?): Boolean {
         return other is GraphEdge &&

@@ -102,7 +102,7 @@ fun main(args: Array<String>) {
     println("End: ${goal.name}")
 
 
-    val geoJson = GeoJson.pathToGeoJson(path)
+    val geoJson = GeoJson.pathToGeoJson(path, color = "#009933")
     println(geoJson)
     writeJsonToFile(geoJson)
 

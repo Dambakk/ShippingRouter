@@ -76,7 +76,7 @@ object AStar {
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode =  connection.toNode // Directed graph
-                val endNodeCost = currentNode.costSoFar + connection.cost
+                val endNodeCost = currentNode.costSoFar + connection.distance
 
                 var endNodeRecord: NodeRecord?
                 var endNodeHeuristic: Int
