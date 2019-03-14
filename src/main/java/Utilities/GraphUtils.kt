@@ -75,21 +75,21 @@ object GraphUtils {
          *  However, it will generate many connections that travels across land. I need to remove such connections
          *  before i can enable this again.
          */
-//        klavenessPolygons.forEach { polygon ->
-//            polygon.middleNodes.forEach {
-//                val outerNode = connections.find { c -> c.fromNode == it }!!.toNode
-//                val neighbours = connections.filter { c ->
-//                            (c.fromNode == outerNode && c.toNode != it) ||
-//                            (c.toNode == outerNode && c.fromNode != it)
-//                }
-//
-//                val newCs = neighbours.map { n ->
-//                    val t = if (n.fromNode == it) n.toNode else n.fromNode
-//                    Models.GraphEdge(it, t, it.position.Utilities.distanceFrom(t.position).Models.toInt())
-//                }
-//                connections.addAll(newCs)
-//            }
-//        }
+        klavenessPolygons.forEach { polygon ->
+            polygon.middleNodes.forEach {
+                val outerNode = connections.find { c -> c.fromNode == it }!!.toNode
+                val neighbours = connections.filter { c ->
+                            (c.fromNode == outerNode && c.toNode != it) ||
+                            (c.toNode == outerNode && c.fromNode != it)
+                }
+
+                val newCs = neighbours.map { n ->
+                    val t = if (n.fromNode == it) n.toNode else n.fromNode
+                    Models.GraphEdge(it, t, it.position.distanceFrom(t.position).toInt())
+                }
+                connections.addAll(newCs)
+            }
+        }
 
 
         println("3) Generated connections from each center node to corresponding klavenessPolygon nodes. Now, a total of ${connections.size} connections")
@@ -153,23 +153,9 @@ object GraphUtils {
                 }
                 .toMutableList()
 
-        val test = GeoJson.toGeoJson(filteredConnections)
+        val filteredConnectionsAsGeoJson = GeoJson.toGeoJson(filteredConnections)
 
-        // 4) Create connections from ports to klavenessPolygon edges
 
-        //TODO: Move this part to below the filtering of illage edges?
-//        val portPoints = ports.map {
-//            val polygon = it.position.getCorrespondingPolygon(klavenessPolygons)
-//            assert(polygon is KlavenessPolygon)
-//            GraphPortNode(it.name, it.position, polygon!!, it.portId)
-//        }
-        //TODO: Move this part to below the filtering of illage edges?
-//        portPoints.forEach { port ->
-//            port.klavenessPolygon!!.graphNodes.forEach {
-//                val connection = GraphEdge(port, it, port.position.distanceFrom(it.position).toInt())
-//                filteredConnections.add(connection)
-//            }
-//        }
 
         // Make the connections directed
         val directedConnections = filteredConnections
