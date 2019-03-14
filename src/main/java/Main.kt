@@ -1,3 +1,4 @@
+import CostFunctions.PolygonCost
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
@@ -95,11 +96,13 @@ fun main() {
 
 
     val ship = Ship("Test ship 1", 1000, 25, 100)
-    val possibleLoadingPorts = listOf("ARRGA", "QAMES", "JPETA", "USCRP")
+    ship.addCostFunction(PolygonCost(1.0f, ""))
+
+    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
 
     val intermediateTime = System.currentTimeMillis()
 
-    val path = AStar.startAStar(graph, start, goal, possibleLoadingPorts, ship)
+    val path = AStar.startAStar(graph, start, goal, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()

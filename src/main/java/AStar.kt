@@ -20,63 +20,33 @@ data class NodeRecord(
     }
 }
 
-
-fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {
-    assert(this.isNotEmpty())
-    return this.minBy { it.estimatedTotalCost }!!
-}
-
-fun Graph.getConnections(node: NodeRecord): Set<GraphEdge> {
-    return this.edges.filter {
-        it.fromNode == node.node ||
-                it.toNode == node.node
-    }.toSet()
-}
-
-fun Graph.getOutgoingConnectionsFrom(node: NodeRecord): Set<GraphEdge> {
-    return this.edges.filter {
-        it.fromNode == node.node
-    }.toSet()
-}
-
-fun List<NodeRecord>.containsNode(node: GraphNode): Boolean {
-    return this.find { it.node == node } != null
-}
-
-
-fun List<NodeRecord>.getNodeRecordOfNode(node: GraphNode): NodeRecord {
-    return this.find { it.node == node }!!
-}
-
-
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPorts: List<String>, ship: Ship): List<GraphEdge>? {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPorts: Map<String, Int>, ship: Ship, numTonnes: Int): List<GraphEdge>? {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
 
-
-
         val start = graph.getPortById(Config.startPortId)
 
-        val loadingPorts = possibleLoadingPorts.map { graph.getPortById(it) }
+        val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Int>>()
 
-
-        val res = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Int>>()
-
-        loadingPorts.forEach { port ->
+        possibleLoadingPorts.forEach { portId, price ->
+            val port = graph.getPortById(portId)
             println(port)
-            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port)!!
-            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode)!!
+            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port, ship.operatingCostEmpyt)!!
+            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode, ship.operatingCostLoaded)!!
 
-            res[port] = Pair((path1 + path2.asIterable()), cost1 + cost2)
+            result[port] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes*price))
 
         }
 
-        val sortedResult = res.toList().sortedByDescending <Pair<GraphNode, Pair<List<GraphEdge>, Int>>, Int> { it.second.second }.toMap()
+        val sortedResult = result
+                .toList()
+                .sortedByDescending <Pair<GraphNode, Pair<List<GraphEdge>, Int>>, Int> { it.second.second }
+                .toMap()
 
 
 
@@ -101,22 +71,18 @@ object AStar {
         geoJsonElements.add(startPin)
         geoJsonElements.add(goalPin)
 
-
         val elements = geoJsonElements.joinToString(separator = ",")
-
         val geoJson = GeoJson.getGeoJson(elements)
         print(geoJson)
 
-
-//        val res = graph.performPathfindingBetweenPorts(startNode, goalNode)
-
-        return null
-
+        return sortedResult
+                .minBy { it.value.second }!! // minimize by cost
+                .value.first // Return path
     }
 
 
 
-    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode): Pair<MutableList<GraphEdge>, Int>? {
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, operationCost: Int): Pair<MutableList<GraphEdge>, Int>? {
         //TODO: Replace estimatedTotalCost with heuristic function
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toInt())
 
@@ -170,7 +136,7 @@ object AStar {
 
                     //Calculate heuristic here....
                     endNodeRecord = NodeRecord(endNode)
-                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() // Todo: Perform estimate here...
+                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
 
                 }
 
@@ -220,4 +186,33 @@ object AStar {
         }
     }
 
+}
+
+
+
+fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {
+    assert(this.isNotEmpty())
+    return this.minBy { it.estimatedTotalCost }!!
+}
+
+fun Graph.getConnections(node: NodeRecord): Set<GraphEdge> {
+    return this.edges.filter {
+        it.fromNode == node.node ||
+                it.toNode == node.node
+    }.toSet()
+}
+
+fun Graph.getOutgoingConnectionsFrom(node: NodeRecord): Set<GraphEdge> {
+    return this.edges.filter {
+        it.fromNode == node.node
+    }.toSet()
+}
+
+fun List<NodeRecord>.containsNode(node: GraphNode): Boolean {
+    return this.find { it.node == node } != null
+}
+
+
+fun List<NodeRecord>.getNodeRecordOfNode(node: GraphNode): NodeRecord {
+    return this.find { it.node == node }!!
 }

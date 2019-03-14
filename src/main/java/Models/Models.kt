@@ -174,13 +174,3 @@ data class KlavenessPolygon(
         fun List<Position>.flitPositions(): List<Position> = this.map { it.flip() }
     }
 }
-
-
-
-data class Ship (
-        val name: String,
-        val maximumDWT: Int,
-        val operatingCostEmpyt: Int,
-        val operatingCostLoaded: Int
-)
-

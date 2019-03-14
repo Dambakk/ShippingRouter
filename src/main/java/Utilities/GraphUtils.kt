@@ -60,6 +60,14 @@ object GraphUtils {
             polygon.middleNodes.add(polygon.middleNodes.first())
         }
 
+        klavenessPolygons.forEach { polygon ->
+            polygon.middleNodes.zipWithNext { a: GraphNode, b: GraphNode ->
+                connections.add(GraphEdge(a, b, a.position.distanceFrom(b.position).toInt()))
+            }
+        }
+
+
+
         /**
          *  This will generate connections between the middel nodes and the neighbouring outer nodes.
          *
