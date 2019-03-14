@@ -138,6 +138,27 @@ object GeoJson {
         return element //getGeoJson(element, "")
     }
 
+    fun toGeoJson(edges: List<GraphEdge>): String {
+        val props = """
+        "stroke": "#555555",
+        "stroke-width": 2,
+        "stroke-opacity": 1,
+        "marker-color": "#36c136",
+        "fill-opacity": 0.1
+        """.trimIndent()
+
+        val elements = mutableListOf<String>()
+
+        for (edge in edges) {
+            val element = createGeoJsonElement(GeoJsonType.LINE_STRING, "[[${edge.fromNode.position.lon}, ${edge.fromNode.position.lat}],[${edge.toNode.position.lon}, ${edge.toNode.position.lat}]]", props)
+            elements.add(element)
+        }
+
+        val geoJsonString = elements.joinToString(separator = ",")
+        return getGeoJson(geoJsonString)
+
+    }
+
 
     fun readWorldCountriesGeoJSON(path: String): List<Polygon> {
         val gson = Gson()

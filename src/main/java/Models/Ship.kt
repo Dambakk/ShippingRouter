@@ -12,5 +12,11 @@ data class Ship (
     fun addCostFunction(costFunction: CostFunction) {
         costFunctions.add(costFunction)
     }
+
+
+    fun calculateHeuristic(): Int {
+
+        return 0
+    }
 }
 

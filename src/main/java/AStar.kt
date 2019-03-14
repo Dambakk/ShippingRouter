@@ -36,8 +36,8 @@ object AStar {
         possibleLoadingPorts.forEach { portId, price ->
             val port = graph.getPortById(portId)
             println(port)
-            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port, ship.operatingCostEmpyt)!!
-            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode, ship.operatingCostLoaded)!!
+            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port, ship.operatingCostEmpyt, ship)!!
+            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode, ship.operatingCostLoaded, ship)!!
 
             result[port] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes*price))
 
@@ -82,7 +82,7 @@ object AStar {
 
 
 
-    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, operationCost: Int): Pair<MutableList<GraphEdge>, Int>? {
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, operationCost: Int, ship: Ship): Pair<MutableList<GraphEdge>, Int>? {
         //TODO: Replace estimatedTotalCost with heuristic function
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toInt())
 
@@ -136,7 +136,8 @@ object AStar {
 
                     //Calculate heuristic here....
                     endNodeRecord = NodeRecord(endNode)
-                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
+//                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
+                    endNodeHeuristic = ship.calculateHeuristic()
 
                 }
 

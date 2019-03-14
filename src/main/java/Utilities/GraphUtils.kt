@@ -2,6 +2,8 @@ package Utilities
 
 import Models.*
 import ch.hsr.geohash.GeoHash
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 object GraphUtils {
@@ -67,7 +69,6 @@ object GraphUtils {
         }
 
 
-
         /**
          *  This will generate connections between the middel nodes and the neighbouring outer nodes.
          *
@@ -96,12 +97,13 @@ object GraphUtils {
 
         // 4) Create connections from ports to klavenessPolygon edges
 
+        //TODO: Move this part to below the filtering of illage edges?
         val portPoints = ports.map {
             val polygon = it.position.getCorrespondingPolygon(klavenessPolygons)
             assert(polygon is KlavenessPolygon)
             GraphPortNode(it.name, it.position, polygon!!, it.portId)
         }
-
+        //TODO: Move this part to below the filtering of illage edges?
         portPoints.forEach { port ->
             port.klavenessPolygon!!.graphNodes.forEach {
                 val connection = GraphEdge(port, it, port.position.distanceFrom(it.position).toInt())
@@ -135,12 +137,39 @@ object GraphUtils {
             it.toNode = groupedPoints.find { n -> n.geohash.contains(it.toNode.geohash.point) } ?: it.toNode
         }
 
-
         val filteredConnections = connections.filter {
             ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
                     ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
                     ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
         }
+                .filterNot { edge ->
+//                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
+                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode){
+                        false
+                    } else {
+                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
+                        worldCountries.any { it.crosses(line) }
+                    }
+                }
+                .toMutableList()
+
+        val test = GeoJson.toGeoJson(filteredConnections)
+
+        // 4) Create connections from ports to klavenessPolygon edges
+
+        //TODO: Move this part to below the filtering of illage edges?
+//        val portPoints = ports.map {
+//            val polygon = it.position.getCorrespondingPolygon(klavenessPolygons)
+//            assert(polygon is KlavenessPolygon)
+//            GraphPortNode(it.name, it.position, polygon!!, it.portId)
+//        }
+        //TODO: Move this part to below the filtering of illage edges?
+//        portPoints.forEach { port ->
+//            port.klavenessPolygon!!.graphNodes.forEach {
+//                val connection = GraphEdge(port, it, port.position.distanceFrom(it.position).toInt())
+//                filteredConnections.add(connection)
+//            }
+//        }
 
         // Make the connections directed
         val directedConnections = filteredConnections
