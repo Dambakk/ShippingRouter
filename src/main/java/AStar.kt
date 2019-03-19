@@ -23,7 +23,7 @@ data class NodeRecord(
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPorts: Map<String, Int>, ship: Ship, numTonnes: Int): List<GraphEdge>? {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): List<GraphEdge>? {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -33,7 +33,7 @@ object AStar {
 
         val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Int>>()
 
-        possibleLoadingPorts.forEach { portId, price ->
+        possibleLoadingPortsWithPrices.forEach { portId, price ->
             val port = graph.getPortById(portId)
             println(port)
             val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port, ship.operatingCostEmpyt, ship)!!
@@ -137,7 +137,8 @@ object AStar {
                     //Calculate heuristic here....
                     endNodeRecord = NodeRecord(endNode)
 //                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
-                    endNodeHeuristic = ship.calculateHeuristic()
+//                    endNodeHeuristic = ship.calculateHeuristic()
+                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() // Todo: Perform estimate here...
 
                 }
 
