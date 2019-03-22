@@ -8,6 +8,6 @@ interface CostFunction {
 
     val weight: Float
 
-    fun getCost(node: GraphNode)
-    fun getCost(edge: GraphEdge)
+    fun getCost(node: GraphNode): Int
+    fun getCost(edge: GraphEdge): Int
 }

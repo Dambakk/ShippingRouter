@@ -79,7 +79,7 @@ object GraphUtils {
             polygon.middleNodes.forEach {
                 val outerNode = connections.find { c -> c.fromNode == it }!!.toNode
                 val neighbours = connections.filter { c ->
-                            (c.fromNode == outerNode && c.toNode != it) ||
+                    (c.fromNode == outerNode && c.toNode != it) ||
                             (c.toNode == outerNode && c.fromNode != it)
                 }
 
@@ -143,18 +143,17 @@ object GraphUtils {
                     ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
         }
                 .filterNot { edge ->
-//                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
-                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode){
+                    //                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
+                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode) {
                         false
                     } else {
-                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
+                        val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
                         worldCountries.any { it.crosses(line) }
                     }
                 }
                 .toMutableList()
 
         val filteredConnectionsAsGeoJson = GeoJson.toGeoJson(filteredConnections)
-
 
 
         // Make the connections directed

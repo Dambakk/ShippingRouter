@@ -7,8 +7,8 @@ import Utilities.*
 data class NodeRecord(
         var node: GraphNode,
         var connection: GraphEdge?,
-        var costSoFar: Int,
-        var estimatedTotalCost: Int
+        var costSoFar: Long,
+        var estimatedTotalCost: Long
 ) {
     constructor(node: GraphNode) : this(node, null, -1, -1)
 
@@ -31,23 +31,22 @@ object AStar {
 
         val start = graph.getPortById(Config.startPortId)
 
-        val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Int>>()
+        val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Long>>()
 
         possibleLoadingPortsWithPrices.forEach { portId, price ->
-            val port = graph.getPortById(portId)
-            println(port)
-            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, port, ship.operatingCostEmpyt, ship)!!
-            val (path2, cost2) = graph.performPathfindingBetweenPorts(port, goalNode, ship.operatingCostLoaded, ship)!!
+            val loadingPort = graph.getPortById(portId)
+            println(loadingPort)
+            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)!!
+            val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true)!!
 
-            result[port] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes*price))
+            result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * price))
 
         }
 
         val sortedResult = result
                 .toList()
-                .sortedByDescending <Pair<GraphNode, Pair<List<GraphEdge>, Int>>, Int> { it.second.second }
+                .sortedByDescending<Pair<GraphNode, Pair<List<GraphEdge>, Long>>, Long> { it.second.second }
                 .toMap()
-
 
 
         val geoJsonElements = mutableListOf<String>()
@@ -81,10 +80,9 @@ object AStar {
     }
 
 
-
-    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, operationCost: Int, ship: Ship): Pair<MutableList<GraphEdge>, Int>? {
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
         //TODO: Replace estimatedTotalCost with heuristic function
-        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toInt())
+        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
 
 
         val openList = mutableListOf(startRecord)
@@ -93,7 +91,7 @@ object AStar {
         var currentNode: NodeRecord? = null
 
         while (openList.isNotEmpty()) {
-            openList.sortBy { it.estimatedTotalCost as Int?}
+            openList.sortBy { it.estimatedTotalCost as Long? }
             currentNode = openList.getCheapestEstimatedNode()
 
             if (currentNode.node == goalNode) {
@@ -105,11 +103,14 @@ object AStar {
             val connections = getConnections(currentNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
-                val endNode =  connection.toNode // Directed graph
-                val endNodeCost = currentNode.costSoFar + connection.distance
+                val endNode = connection.toNode // Directed graph
+
+//                val endNodeCost = currentNode.costSoFar + connection.distance
+//                val endNodeCost = (currentNode.costSoFar + ship.calculateCost(connection, isLoaded)/1000.0).toInt()
+                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded)
 
                 var endNodeRecord: NodeRecord?
-                var endNodeHeuristic: Int
+                var endNodeHeuristic: Long
 
                 if (closedList.containsNode(endNode)) { // Does closed list contain node?
                     endNodeRecord = closedList.getNodeRecordOfNode(endNode)
@@ -118,7 +119,7 @@ object AStar {
                     if (endNodeRecord.costSoFar <= endNodeCost) {
                         continue
                     } else {
-                        closedList -= endNodeRecord
+                        closedList.remove(endNodeRecord)
                     }
 
                     endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
@@ -138,7 +139,7 @@ object AStar {
                     endNodeRecord = NodeRecord(endNode)
 //                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
 //                    endNodeHeuristic = ship.calculateHeuristic()
-                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() // Todo: Perform estimate here...
+                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toLong() // Todo: Perform estimate here...
 
                 }
 
@@ -180,7 +181,8 @@ object AStar {
                 closedList.remove(currentNode)
                 currentNode = closedList.find {
                     (
-                            it.node == currentNode!!.connection!!.fromNode ||
+                            it.node == currentNode!!.connection!!.fromNode
+                                    ||
                                     it.node == currentNode!!.connection!!.toNode)
                 }!!
             }
@@ -189,7 +191,6 @@ object AStar {
     }
 
 }
-
 
 
 fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {

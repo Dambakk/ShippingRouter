@@ -2,25 +2,36 @@ package CostFunctions
 
 import Models.GraphEdge
 import Models.GraphNode
+import Utilities.GeoJson
+import Utilities.flip
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.Polygon
 
 
-class PolygonCost : CostFunction {
-    override var weight: Float
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : CostFunction {
 
-    constructor(weight: Float, geoJsonFilePath: String) {
-        this.weight = weight
+    val polygon: Polygon
 
+    init {
+        assert(weight in 0.0..1.0)
+        this.polygon = GeoJson.readSinglePolygonGeoJson(geoJsonFilePath)
     }
 
-    override fun getCost(node: GraphNode) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun getCost(node: GraphNode): Int = if (GeometryFactory.createPointFromInternalCoord(Coordinate(node.position.lon, node.position.lat), polygon)
+                    .coveredBy(polygon)) {
+        println("I AM ADDING A COST OF $cost!!!")
+        cost
+    } else {
+        0
     }
 
-    override fun getCost(edge: GraphEdge) {
+    override fun getCost(edge: GraphEdge): Int {
+        //TODO: Hente bare fra fromNode
         val a = getCost(edge.fromNode)
         val b = getCost(edge.toNode)
 
+        return a + b
     }
 
 }

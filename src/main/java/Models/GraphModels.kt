@@ -4,6 +4,9 @@ import Utilities.GeoJson
 import Utilities.GeoJsonInterface
 import Utilities.GeoJsonType
 import ch.hsr.geohash.GeoHash
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 
 
 class Graph(
@@ -46,6 +49,10 @@ open class GraphNode (
     init {
         assert(position.lat in (-90.0..90.0) && position.lon in (-180.0..180.0)) {"Port position invalid: $position, $name"}
     }
+
+    fun toGeometry(): Geometry =
+        GeometryFactory().createPoint(Coordinate(this.position.lat, this.position.lon))
+
 
     override fun toGeoJsonObject() = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${position.lat}, ${position.lon}]")
 

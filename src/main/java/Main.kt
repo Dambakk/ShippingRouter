@@ -51,7 +51,7 @@ fun main() {
             .also { println("Number of ports: ${it.size}") }
 
     portPoints.forEach {
-        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Port position invalid: ${it.position}, ${it.portId}"}
+        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Port position invalid: ${it.position}, ${it.portId}" }
     }
 
 
@@ -70,7 +70,7 @@ fun main() {
             .toList()
 
     points.forEach {
-        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) {"Node position invalid: ${it.position}"}
+        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Node position invalid: ${it.position}" }
     }
 
     val allPoints = points + portPoints
@@ -94,9 +94,11 @@ fun main() {
     val goal = graph.getPortById(Config.goalPortId)
 
 
-
-    val ship = Ship("Test ship 1", 1000, 25, 100)
-    ship.addCostFunction(PolygonCost(1.0f, ""))
+    val ship = Ship("Test ship 1", 1000, 25, 100).apply {
+//        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
+//        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
+    }
+//            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
 
     val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
 
@@ -118,9 +120,9 @@ fun main() {
     println(geoJson)
     writeJsonToFile(geoJson)
 
-    println("Preparation time: \t${(intermediateTime - startTime)/1000.0} seconds")
-    println("A-star duration: \t${(endTime- intermediateTime)/1000.0} seconds")
-    println("Total duration: \t${(endTime- startTime)/1000.0} seconds")
+    println("Preparation time: \t${(intermediateTime - startTime) / 1000.0} seconds")
+    println("A-star duration: \t${(endTime - intermediateTime) / 1000.0} seconds")
+    println("Total duration: \t${(endTime - startTime) / 1000.0} seconds")
 
     println("Done")
 

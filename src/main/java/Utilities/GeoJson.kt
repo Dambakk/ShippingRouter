@@ -14,7 +14,6 @@ interface GeoJsonInterface {
     fun toGeoJsonObject(): String
 }
 
-
 infix fun Coordinate.notIn(countries: List<Polygon>) = !countries.any { it.contains(GeometryFactory().createPoint(this)) }
 
 infix fun GraphNode.notIn(countries: List<Polygon>) = Coordinate(this.position.lon, this.position.lat) notIn countries
@@ -24,11 +23,19 @@ infix fun GraphNode.notIn(countries: List<Polygon>) = Coordinate(this.position.l
 data class GeoJsonObject(val type: String,
                          val features: List<GeoJsonFeature>) {
 
+    /**
+     * If geojson object only contains one polygon, this function returns a list
+     * containing one element of type polygon
+     *
+     * If geojson object containts many polygons (multipolygon), a list of polygons
+     * will be returned.
+     */
     fun getAllPolygonsLocationTech(): List<Polygon> {
         return features.map {
             it.getPolygonPositions()
                     .map { polygon ->
                         val coords = polygon.map { pos -> Coordinate(pos.lat, pos.lon) } as MutableList
+//                        val coords = polygon.map { pos -> Coordinate(pos.lon, pos.lat) } as MutableList
                         coords.add(coords[0]) //To make a closed ring
                         GeometryFactory()
                                 .createPolygon(coords.toTypedArray())
@@ -167,4 +174,13 @@ object GeoJson {
         val worldCountryPolygons = data.getAllPolygonsLocationTech()
         return worldCountryPolygons
     }
+
+
+    fun readSinglePolygonGeoJson(path: String): Polygon {
+        val gson = Gson()
+        val reader = JsonReader(FileReader(path))
+        val data = gson.fromJson<GeoJsonObject>(reader, GeoJsonObject::class.java)
+        return data.getAllPolygonsLocationTech().first()
+    }
+
 }
