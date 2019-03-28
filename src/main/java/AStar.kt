@@ -56,9 +56,10 @@ object AStar {
             val color = getRandomColor()
             val props = """
                 "marker-color": "$color",
-                "stroke":"$color"
+                "stroke":"$color",
+                "total-cost": ${v.second}
             """.trimIndent()
-            val geoJsonElement = Utilities.GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString())
+            val geoJsonElement = Utilities.GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
             val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
             geoJsonElements.add(geoJsonElement)
             geoJsonElements.add(portPoint)

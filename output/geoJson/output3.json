@@ -9,6 +9,7 @@
   "properties": {
     "stroke": "#009933",
 "stroke-width": "5",
-"stroke-opacity": 1
+"stroke-opacity": 1,
+"label": 
   }
 }

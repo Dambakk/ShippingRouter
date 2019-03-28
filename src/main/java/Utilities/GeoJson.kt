@@ -129,7 +129,7 @@ object GeoJson {
     fun pointToGeoJson(point: GraphNode) = createGeoJsonElement(GeoJsonType.POINT, "[${point.position.lon}, ${point.position.lat}]")
 
 
-    fun pathToGeoJson(path: List<GraphEdge>, color: String = "#000000", thickness: String = "5"): String {
+    fun pathToGeoJson(path: List<GraphEdge>, color: String = "#000000", thickness: String = "5", label: String = ""): String {
         val coords = path.map { item ->
             "[${item.fromNode.position.lon}, ${item.fromNode.position.lat}],[${item.toNode.position.lon}, ${item.toNode.position.lat}]"
         }.toString()
@@ -137,7 +137,8 @@ object GeoJson {
         val props = """
                 "stroke": "$color",
                 "stroke-width": "$thickness",
-                "stroke-opacity": 1
+                "stroke-opacity": 1,
+                "label": $label
         """.trimIndent()
 
         val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords, props)
