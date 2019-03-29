@@ -3,6 +3,7 @@ import Models.GraphEdge
 import Models.GraphNode
 import Models.Ship
 import Utilities.*
+import me.tongfei.progressbar.ProgressBar
 
 data class NodeRecord(
         var node: GraphNode,
@@ -23,7 +24,7 @@ data class NodeRecord(
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): List<GraphEdge>? {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): Pair<List<GraphEdge>?,Long> {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -35,9 +36,9 @@ object AStar {
 
         possibleLoadingPortsWithPrices.forEach { portId, price ->
             val loadingPort = graph.getPortById(portId)
-            Logger.log("Evaluating for port: $loadingPort.")
+            Logger.log("Evaluating for loading port: $loadingPort.")
             val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)!!
-            Logger.log("Reached loading port.", LogType.DEBUG)
+//            Logger.log("Reached loading port.", LogType.DEBUG)
             val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true)!!
 
             result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * price))
@@ -76,11 +77,17 @@ object AStar {
         val geoJson = GeoJson.getGeoJson(elements)
 
         Logger.log("GeoJson of cheapest path:")
-        print(geoJson)
+        println(geoJson)
 
-        return sortedResult
+        val minPath = sortedResult
                 .minBy { it.value.second }!! // minimize by cost
                 .value.first // Return path
+
+        val minCost = sortedResult
+                .minBy { it.value.second }!! // minimize by cost
+                .value.second // Return path
+
+        return Pair(minPath, minCost)
     }
 
 
@@ -88,6 +95,9 @@ object AStar {
         //TODO: Replace estimatedTotalCost with heuristic function
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
 
+
+        val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
+        val pb = ProgressBar("From ${startNode.name} to ${goalNode.name}: ", totalDist)
 
         val openList = mutableListOf(startRecord)
         val closedList = mutableListOf<NodeRecord>()
@@ -97,6 +107,11 @@ object AStar {
         while (openList.isNotEmpty()) {
             openList.sortBy { it.estimatedTotalCost as Long? }
             currentNode = openList.getCheapestEstimatedNode()
+
+            val estimatedDistToDest = currentNode.node.position.distanceFrom(goalNode.position).toLong()
+            val progress = if ((totalDist - estimatedDistToDest) > 0) totalDist - estimatedDistToDest else 0
+            pb.stepTo(progress)
+
 
             if (currentNode.node == goalNode) {
                 closedList.add(currentNode.flipConnectionNodes())
@@ -169,6 +184,9 @@ object AStar {
             }
 
         } // End of while loop
+
+        pb.close()
+
 
         assert(currentNode != null)
         return if (currentNode!!.node != goalNode) {

@@ -2,6 +2,7 @@ package Utilities
 
 import Models.*
 import ch.hsr.geohash.GeoHash
+import me.tongfei.progressbar.ProgressBar
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
@@ -18,11 +19,15 @@ object GraphUtils {
         var connections = mutableListOf<GraphEdge>()
         val nodesMap = mutableMapOf<Pair<Int, Int>, GraphNode>()
 
+        val pb = ProgressBar("Creating nodes...", 119*360)
+
         for (i in 31..150 step step) {
             val lat = i - 90
 
             for (j in 0..360 step step) {
                 val lon = j - 180
+
+                pb.step()
 
                 val node = GraphNode("($lat, $lon)", Position(lat.toDouble(), lon.toDouble()))
 
@@ -64,6 +69,8 @@ object GraphUtils {
                 }
             }
         }
+
+        pb.close()
 
         Logger.log("Got ${nodes.size} nodes")
         val pointsAsGeoJson = GeoJson.pointsToGeoJson(nodes)
@@ -126,10 +133,14 @@ object GraphUtils {
             }
 
         }
+        Logger.log("Added $counter connections to ports")
+        Logger.log("Now, a total of ${connections.size} connections")
 
 
-        val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -180 }
-        val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 180 }
+        Logger.log("Number of connections before making the world round: ${connections.size} connections")
+
+        val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -179 }
+        val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 179 }
 
         leftSideOfWorld.zip(rightSideOfWorld).forEach {
             val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
@@ -137,13 +148,7 @@ object GraphUtils {
         }
 
         val geoJson = GeoJson.edgesToGeoJson(connections)
-        Logger.log("Added $counter connections to ports")
-        Logger.log("Now, a total of ${connections.size} connections")
-
-
-
-
-        //TODO: Connect edges on both sides of the world together
+        Logger.log("Number of connections after making the world round: ${connections.size} connections")
 
 
         val directedConnections = connections

@@ -45,6 +45,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>me.tongfei</groupId>
+            <artifactId>progressbar</artifactId>
+            <version>0.7.2</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.beust/klaxon -->
         <!--<dependency>-->
             <!--<groupId>com.beust</groupId>-->

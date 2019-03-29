@@ -1,3 +1,4 @@
+import CostFunctions.PolygonCost
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
@@ -77,12 +78,12 @@ fun main() {
     println("Total number of nodes: ${allPoints.size}")
 
 
-    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(32) }
-            .map { (key, list) ->
-                val newName = list.map { it.name }.toSet().joinToString(separator = "+")
-                GraphNode(newName, list.first().position, GeoHash.fromBinaryString(key))
-            }
-            .toSet()
+//    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(32) }
+//            .map { (key, list) ->
+//                val newName = list.map { it.name }.toSet().joinToString(separator = "+")
+//                GraphNode(newName, list.first().position, GeoHash.fromBinaryString(key))
+//            }
+//            .toSet()
 
     val pointsJsonString = Utils.toJsonString(allPoints)
     println(pointsJsonString)
@@ -97,7 +98,7 @@ fun main() {
 
 
     val ship = Ship("Test ship 1", 1000, 25, 100).apply {
-//        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
+        addCostFunction(PolygonCost(1.0f, Integer.MAX_VALUE, "assets/constraints/suez-polygon.geojson"))
 //        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
     }
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
@@ -108,7 +109,7 @@ fun main() {
 
     val intermediateTime = System.currentTimeMillis()
 
-    val path = AStar.startAStar(graph, start, goal, possibleLoadingPortsWithPortPrice, ship, 1000)
+    val (path, cost) = AStar.startAStar(graph, start, goal, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()
@@ -120,7 +121,7 @@ fun main() {
     println("End: ${goal.name}")
 
 
-    val geoJson = Utilities.GeoJson.pathToGeoJson(path, color = "#009933")
+    val geoJson = Utilities.GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
     println(geoJson)
 //    writeJsonToFile(geoJson)
 
