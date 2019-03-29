@@ -33,7 +33,7 @@ class GraphEdge (
 
 class GraphPortNode (name: String,
                      position: Position,
-                     val klavenessPolygon: KlavenessPolygon?,
+                     val klavenessPolygon: KlavenessPolygon? = null,
                      val portId: String
 ) : GraphNode(name, position, GeoHash.withBitPrecision(position.lat, position.lon, 64)) {
 

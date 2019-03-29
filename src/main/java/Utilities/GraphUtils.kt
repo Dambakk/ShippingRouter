@@ -9,7 +9,154 @@ import org.locationtech.jts.geom.Polygon
 object GraphUtils {
 
 
-    fun createGraph(klavenessPolygons: List<KlavenessPolygon>, ports: List<GraphPortNode>, sanitizedGroupedPoints: Set<GraphNode>, worldCountries: List<Polygon>): Graph {
+    fun createLatLonGraph(ports: List<GraphPortNode>, initialPrecision: Int, worldCountries: List<Polygon>): Graph {
+        assert(initialPrecision in 0..100) { "Invalid precision" }
+
+        val step = 1 // Can be 1
+
+        val nodes = mutableListOf<GraphNode>()
+        var connections = mutableListOf<GraphEdge>()
+        val nodesMap = mutableMapOf<Pair<Int, Int>, GraphNode>()
+
+        for (i in 31..150 step step) {
+            val lat = i - 90
+
+            for (j in 0..360 step step) {
+                val lon = j - 180
+
+                val node = GraphNode("($lat, $lon)", Position(lat.toDouble(), lon.toDouble()))
+
+                if (node notIn worldCountries) {
+                    nodes.add(node)
+                    nodesMap[Pair(lat, lon)] = node
+                }
+
+                if (i > 0) {
+                    val prev = nodesMap[Pair(lat - step, lon)]
+                    if (prev != null) {
+                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
+                        connections.add(conn)
+                    }
+                }
+
+                if (j > 0) {
+                    val prev = nodesMap[Pair(lat, lon - step)]
+                    if (prev != null) {
+                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
+                        connections.add(conn)
+                    }
+                }
+
+                if (i > 0 && j > 0) {
+                    val prev = nodesMap[Pair(lat - step, lon - step)]
+                    if (prev != null) {
+                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
+                        connections.add(conn)
+                    }
+                }
+
+                if (i < 180 && j < 360) {
+                    val prev = nodesMap[Pair(lat - step, lon + step)]
+                    if (prev != null) {
+                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
+                        connections.add(conn)
+                    }
+                }
+            }
+        }
+
+        Logger.log("Got ${nodes.size} nodes")
+        val pointsAsGeoJson = GeoJson.pointsToGeoJson(nodes)
+
+        Logger.log("Num generated connections: ${connections.size}")
+        connections = connections.removeEdgesOnLand(worldCountries)
+        Logger.log("Num filtered connections: ${connections.size}")
+
+        val portPoints = ports.map {
+            GraphPortNode(it.name, it.position, portId = it.portId)
+        }
+        //TODO: Move this part to below the filtering of illage edges?
+        var counter = 0
+        portPoints.forEach { port ->
+            val portLat = (((port.position.lat.toInt()) / step) * step).toInt() // Round off to match graph grid
+            val portLon = (((port.position.lon.toInt()) / step) * step).toInt() // Round off to match graph grid
+
+            assert(portLat % step == 0 && portLon % step == 0) { "Port position is not part of graph grid" }
+            nodesMap[Pair(portLat, portLon)]?.run {
+                val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                connections.add(conn)
+                counter++
+            }
+
+            for (t in 1..2) {
+
+                nodesMap[Pair(portLat - step * t, portLon)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+                nodesMap[Pair(portLat, portLon - step * t)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+                nodesMap[Pair(portLat - step * t, portLon - step * t)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+
+
+
+                nodesMap[Pair(portLat + step * t, portLon)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+                nodesMap[Pair(portLat, portLon + step * t)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+                nodesMap[Pair(portLat + step * t, portLon + step * t)]?.run {
+                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    connections.add(conn)
+                    counter++
+                }
+            }
+
+        }
+
+
+        val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -180 }
+        val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 180 }
+
+        leftSideOfWorld.zip(rightSideOfWorld).forEach {
+            val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
+            connections.add(conn)
+        }
+
+        val geoJson = GeoJson.edgesToGeoJson(connections)
+        Logger.log("Added $counter connections to ports")
+        Logger.log("Now, a total of ${connections.size} connections")
+
+
+
+
+        //TODO: Connect edges on both sides of the world together
+
+
+        val directedConnections = connections
+                .map { listOf(it, it.createFlipped()) }
+                .flatten()
+
+        Logger.log("(${directedConnections.size} directed connections)")
+
+
+        return Graph(directedConnections, nodes + ports)
+    }
+
+    fun createKlavenessGraph(klavenessPolygons: List<KlavenessPolygon>, ports: List<GraphPortNode>, sanitizedGroupedPoints: Set<GraphNode>, worldCountries: List<Polygon>): Graph {
 
 
         // 1) Generate outer connection on each klavenessPolygon:
@@ -137,23 +284,26 @@ object GraphUtils {
             it.toNode = groupedPoints.find { n -> n.geohash.contains(it.toNode.geohash.point) } ?: it.toNode
         }
 
-        val filteredConnections = connections.filter {
-            ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
-                    ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
-                    ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
-        }
-                .filterNot { edge ->
-                    //                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
-                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode) {
-                        false
-                    } else {
-                        val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
-                        worldCountries.any { it.crosses(line) }
-                    }
-                }
-                .toMutableList()
 
-        val filteredConnectionsAsGeoJson = GeoJson.toGeoJson(filteredConnections)
+        val filteredConnections = connections.removeEdgesOnLand(worldCountries)
+
+//        val filteredConnections = connections.filter {
+//            ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
+//                    ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
+//                    ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
+//        }
+//                .filterNot { edge ->
+//                                        //val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
+//                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode) {
+//                        false
+//                    } else {
+//                        val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
+//                        worldCountries.any { it.crosses(line) }
+//                    }
+//                }
+//                .toMutableList()
+
+        val filteredConnectionsAsGeoJson = GeoJson.edgesToGeoJson(filteredConnections)
 
 
         // Make the connections directed
@@ -172,6 +322,23 @@ object GraphUtils {
         return graph
 
     }
+
+
+    fun MutableList<GraphEdge>.removeEdgesOnLand(worldCountries: List<Polygon>): MutableList<GraphEdge> = this
+            .filter {
+                ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
+                        ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
+                        ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
+            }
+            .filterNot { edge ->
+                if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode) {
+                    false
+                } else {
+                    val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
+                    worldCountries.any { it.crosses(line) }
+                }
+            }
+            .toMutableList()
 }
 
 

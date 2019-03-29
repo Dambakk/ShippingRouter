@@ -126,7 +126,8 @@ fun GraphEdge.splitInTwo(): List<GraphEdge> {
 
 fun Graph.getPortById(portId: String): GraphPortNode {
     assert(portId in Config.portIdsOfInterest)
-    return nodes.filter { it is GraphPortNode }
+    return nodes
+            .filter { it is GraphPortNode }
             .find {
                 (it as GraphPortNode).portId == portId
             }!! as GraphPortNode

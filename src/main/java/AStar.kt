@@ -35,8 +35,9 @@ object AStar {
 
         possibleLoadingPortsWithPrices.forEach { portId, price ->
             val loadingPort = graph.getPortById(portId)
-            println(loadingPort)
+            Logger.log("Evaluating for port: $loadingPort.")
             val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)!!
+            Logger.log("Reached loading port.", LogType.DEBUG)
             val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true)!!
 
             result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * price))
@@ -73,6 +74,8 @@ object AStar {
 
         val elements = geoJsonElements.joinToString(separator = ",")
         val geoJson = GeoJson.getGeoJson(elements)
+
+        Logger.log("GeoJson of cheapest path:")
         print(geoJson)
 
         return sortedResult
@@ -173,6 +176,9 @@ object AStar {
             null
 
         } else {
+
+
+            //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
 
             val totalCost = currentNode.costSoFar
             //Did find a valid path

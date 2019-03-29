@@ -7,7 +7,9 @@ object Config {
     val goalPortId = "USWWO"
 
     val saveGeoJsonToFile = true
-    val geoJsonFilePath = "output/geoJson/output3.json"
+    val geoJsonFilePath = "output/geoJson/output4.json"
     val worldCountriesGeoJsonFile = "assets/countries2.geojson"
     val polygonInputFile = "assets/polygons2.csv"
+
+    val debug = true
 }

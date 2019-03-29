@@ -1,4 +1,3 @@
-import CostFunctions.PolygonCost
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
@@ -88,7 +87,10 @@ fun main() {
     val pointsJsonString = Utils.toJsonString(allPoints)
     println(pointsJsonString)
 
-    val graph = GraphUtils.createGraph(polygons, portPoints, groupedPoints, worldCountries)
+    val graph = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
+//    val graph = GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
+
+    Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
 
     val start = graph.getPortById(Config.startPortId)
     val goal = graph.getPortById(Config.goalPortId)
@@ -100,7 +102,9 @@ fun main() {
     }
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
 
-    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
+//    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
+//    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
+    val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
 
     val intermediateTime = System.currentTimeMillis()
 
@@ -118,13 +122,12 @@ fun main() {
 
     val geoJson = Utilities.GeoJson.pathToGeoJson(path, color = "#009933")
     println(geoJson)
-    writeJsonToFile(geoJson)
+//    writeJsonToFile(geoJson)
 
-    println("Preparation time: \t${(intermediateTime - startTime) / 1000.0} seconds")
-    println("A-star duration: \t${(endTime - intermediateTime) / 1000.0} seconds")
-    println("Total duration: \t${(endTime - startTime) / 1000.0} seconds")
+    Logger.log("Preparation time: \t${(intermediateTime - startTime) / 1000.0} seconds")
+    Logger.log("A-star duration: \t${(endTime - intermediateTime) / 1000.0} seconds")
+    Logger.log("Total duration: \t\t${(endTime - startTime) / 1000.0} seconds")
 
-    println("Done")
-
+    Logger.log("Done")
 
 }
