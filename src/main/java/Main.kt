@@ -97,6 +97,8 @@ fun main() {
     val goal = graph.getPortById(Config.goalPortId)
 
 
+
+
     val ship = Ship("Test ship 1", 1000, 25, 100).apply {
         addCostFunction(PolygonCost(1.0f, Integer.MAX_VALUE, "assets/constraints/suez-polygon.geojson"))
 //        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
@@ -108,6 +110,12 @@ fun main() {
     val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
 
     val intermediateTime = System.currentTimeMillis()
+
+//    val (path1, cost1) = AStar.runAStar(graph, start, goal, ship, isLoaded = false)!!
+//    val geoJson1 = Utilities.GeoJson.pathToGeoJson(path1, color = "#009933", label = "$cost1")
+//    Logger.log("Testpath:")
+//    println(geoJson1)
+//    val (path1, cost1) = graph.performPathfindingBetweenPorts(start, goal, ship, isLoaded = false)!!
 
     val (path, cost) = AStar.startAStar(graph, start, goal, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")

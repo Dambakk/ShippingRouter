@@ -19,7 +19,7 @@ object GraphUtils {
         var connections = mutableListOf<GraphEdge>()
         val nodesMap = mutableMapOf<Pair<Int, Int>, GraphNode>()
 
-        val pb = ProgressBar("Creating nodes...", 119*360)
+        val pb = ProgressBar("Creating nodes...", 119 * 360)
 
         for (i in 31..150 step step) {
             val lat = i - 90
@@ -82,6 +82,9 @@ object GraphUtils {
         val portPoints = ports.map {
             GraphPortNode(it.name, it.position, portId = it.portId)
         }
+
+        nodes.addAll(portPoints)
+
         //TODO: Move this part to below the filtering of illage edges?
         var counter = 0
         portPoints.forEach { port ->
@@ -142,10 +145,40 @@ object GraphUtils {
         val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -179 }
         val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 179 }
 
-        leftSideOfWorld.zip(rightSideOfWorld).forEach {
-            val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
-            connections.add(conn)
-        }
+        Logger.log("Number on left side: ${leftSideOfWorld.size}", LogType.DEBUG)
+        Logger.log("Number on right side: ${rightSideOfWorld.size}", LogType.DEBUG)
+
+//        for (t in 0 until leftSideOfWorld.size) {
+//            val a = leftSideOfWorld[t]
+//            val b = rightSideOfWorld[t]
+//            assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
+//            val conn = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
+//            connections.addAll(conn)
+//        }
+
+        val a = leftSideOfWorld[35]
+        val b = rightSideOfWorld[35]
+        assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
+        val conns = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
+        connections.addAll(conns)
+
+//        rightSideOfWorld.zip(leftSideOfWorld).forEach {
+//            val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
+//            val conn = listOf(GraphEdge(it.first, it.second, 0), GraphEdge(it.second, it.first, 0)) //Distance is 0
+//            connections.addAll(conn)
+//        }
+
+
+        //Hard test: Removing all nodes and connections in the middle of the world:
+        nodes.removeIf { it.position.lon.toInt() in -26..100 }
+        connections.removeIf { it.fromNode.position.lon.toInt() in -26..100 || it.toNode.position.lon.toInt() in -26..100 }
+
+
+        val start = nodes.find { it is GraphPortNode && it.portId == Config.startPortId }!!
+        val goal = nodes.find { it is GraphPortNode && it.portId == Config.goalPortId }!!
+
+//        val conn = GraphEdge(start, goal, 100)
+//        connections.add(conn)
 
         val geoJson = GeoJson.edgesToGeoJson(connections)
         Logger.log("Number of connections after making the world round: ${connections.size} connections")

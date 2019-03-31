@@ -91,7 +91,12 @@ object AStar {
     }
 
 
-    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
+    fun runAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
+        return graph.performPathfindingBetweenPorts(startNode, goalNode, ship, isLoaded)
+    }
+
+
+    fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
         //TODO: Replace estimatedTotalCost with heuristic function
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
 
@@ -114,12 +119,13 @@ object AStar {
 
 
             if (currentNode.node == goalNode) {
+                Logger.log("Reached goal", LogType.DEBUG)
                 closedList.add(currentNode.flipConnectionNodes())
 //                closedList.add(currentNode)
                 break
             }
 
-            val connections = getConnections(currentNode)
+            val connections = getConnectionsForNode(currentNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode = connection.toNode // Directed graph
@@ -191,6 +197,7 @@ object AStar {
         assert(currentNode != null)
         return if (currentNode!!.node != goalNode) {
             // Did not find a path
+            Logger.log("Did not find path", LogType.WARNING)
             null
 
         } else {
@@ -211,6 +218,7 @@ object AStar {
                                     it.node == currentNode!!.connection!!.toNode)
                 }!!
             }
+            Logger.log("Did find a path")
             Pair(path.asReversed(), totalCost)
         }
     }
@@ -223,10 +231,16 @@ fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {
     return this.minBy { it.estimatedTotalCost }!!
 }
 
-fun Graph.getConnections(node: NodeRecord): Set<GraphEdge> {
+fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
     return this.edges.filter {
         it.fromNode == node.node ||
                 it.toNode == node.node
+    }.toSet()
+}
+
+fun Graph.getOutgoingConnectionsForNode(node: NodeRecord): Set<GraphEdge>{
+    return this.edges.filter {
+        it.fromNode == node.node
     }.toSet()
 }
 
