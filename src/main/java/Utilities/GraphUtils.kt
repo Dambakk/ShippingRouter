@@ -156,33 +156,26 @@ object GraphUtils {
 //            connections.addAll(conn)
 //        }
 
-        val a = leftSideOfWorld[35]
-        val b = rightSideOfWorld[35]
-        assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
-        val conns = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
-        connections.addAll(conns)
-
-//        rightSideOfWorld.zip(leftSideOfWorld).forEach {
+//        val a = leftSideOfWorld[35]
+//        val b = rightSideOfWorld[35]
+//        assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
+//        val conns = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
+//        connections.addAll(conns)
+//
+        rightSideOfWorld.zip(leftSideOfWorld).forEach {
 //            val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
-//            val conn = listOf(GraphEdge(it.first, it.second, 0), GraphEdge(it.second, it.first, 0)) //Distance is 0
-//            connections.addAll(conn)
-//        }
+            val conn = listOf(GraphEdge(it.first, it.second, 0), GraphEdge(it.second, it.first, 0)) //Distance is 0
+            connections.addAll(conn)
+        }
 
 
         //Hard test: Removing all nodes and connections in the middle of the world:
-        nodes.removeIf { it.position.lon.toInt() in -26..100 }
-        connections.removeIf { it.fromNode.position.lon.toInt() in -26..100 || it.toNode.position.lon.toInt() in -26..100 }
+//        nodes.removeIf { it.position.lon.toInt() in -26..100 }
+//        connections.removeIf { it.fromNode.position.lon.toInt() in -26..100 || it.toNode.position.lon.toInt() in -26..100 }
 
-
-        val start = nodes.find { it is GraphPortNode && it.portId == Config.startPortId }!!
-        val goal = nodes.find { it is GraphPortNode && it.portId == Config.goalPortId }!!
-
-//        val conn = GraphEdge(start, goal, 100)
-//        connections.add(conn)
 
         val geoJson = GeoJson.edgesToGeoJson(connections)
         Logger.log("Number of connections after making the world round: ${connections.size} connections")
-
 
         val directedConnections = connections
                 .map { listOf(it, it.createFlipped()) }

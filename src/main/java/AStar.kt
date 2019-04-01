@@ -125,7 +125,8 @@ object AStar {
                 break
             }
 
-            val connections = getConnectionsForNode(currentNode)
+//            val connections = getConnectionsForNode(currentNode)
+            val connections = getOutgoingConnectionsFrom(currentNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode = connection.toNode // Directed graph
@@ -235,12 +236,6 @@ fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
     return this.edges.filter {
         it.fromNode == node.node ||
                 it.toNode == node.node
-    }.toSet()
-}
-
-fun Graph.getOutgoingConnectionsForNode(node: NodeRecord): Set<GraphEdge>{
-    return this.edges.filter {
-        it.fromNode == node.node
     }.toSet()
 }
 
