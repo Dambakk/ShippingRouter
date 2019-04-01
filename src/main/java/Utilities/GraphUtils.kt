@@ -37,34 +37,26 @@ object GraphUtils {
                 }
 
                 if (i > 0) {
-                    val prev = nodesMap[Pair(lat - step, lon)]
-                    if (prev != null) {
-                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
-                        connections.add(conn)
+                    nodesMap[Pair(lat - step, lon)]?.run {
+                        connections.add(GraphEdge(this, node, this.position.distanceFrom(node.position).toInt()))
                     }
                 }
 
                 if (j > 0) {
-                    val prev = nodesMap[Pair(lat, lon - step)]
-                    if (prev != null) {
-                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
-                        connections.add(conn)
+                    nodesMap[Pair(lat, lon - step)]?.run {
+                        connections.add(GraphEdge(this, node, this.position.distanceFrom(node.position).toInt()))
                     }
                 }
 
                 if (i > 0 && j > 0) {
-                    val prev = nodesMap[Pair(lat - step, lon - step)]
-                    if (prev != null) {
-                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
-                        connections.add(conn)
+                    nodesMap[Pair(lat - step, lon - step)]?.run {
+                        connections.add(GraphEdge(this, node, this.position.distanceFrom(node.position).toInt()))
                     }
                 }
 
                 if (i < 180 && j < 360) {
-                    val prev = nodesMap[Pair(lat - step, lon + step)]
-                    if (prev != null) {
-                        val conn = GraphEdge(prev, node, prev.position.distanceFrom(node.position).toInt())
-                        connections.add(conn)
+                    nodesMap[Pair(lat - step, lon + step)]?.run {
+                        connections.add(GraphEdge(this, node, this.position.distanceFrom(node.position).toInt()))
                     }
                 }
             }
@@ -79,13 +71,10 @@ object GraphUtils {
         connections = connections.removeEdgesOnLand(worldCountries)
         Logger.log("Num filtered connections: ${connections.size}")
 
-        val portPoints = ports.map {
-            GraphPortNode(it.name, it.position, portId = it.portId)
-        }
+        val portPoints = ports
+                .map { GraphPortNode(it.name, it.position, portId = it.portId) }
+                .also { nodes.addAll(it) }
 
-        nodes.addAll(portPoints)
-
-        //TODO: Move this part to below the filtering of illage edges?
         var counter = 0
         portPoints.forEach { port ->
             val portLat = (((port.position.lat.toInt()) / step) * step).toInt() // Round off to match graph grid
@@ -93,25 +82,25 @@ object GraphUtils {
 
             assert(portLat % step == 0 && portLon % step == 0) { "Port position is not part of graph grid" }
             nodesMap[Pair(portLat, portLon)]?.run {
-                val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
-                connections.add(conn)
+                connections.add(GraphEdge(this, port, this.position.distanceFrom(port.position).toInt()))
                 counter++
             }
 
+            // TODO: Change to only 1?
             for (t in 1..2) {
 
                 nodesMap[Pair(portLat - step * t, portLon)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
                 nodesMap[Pair(portLat, portLon - step * t)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
                 nodesMap[Pair(portLat - step * t, portLon - step * t)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
@@ -119,17 +108,17 @@ object GraphUtils {
 
 
                 nodesMap[Pair(portLat + step * t, portLon)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
                 nodesMap[Pair(portLat, portLon + step * t)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
                 nodesMap[Pair(portLat + step * t, portLon + step * t)]?.run {
-                    val conn = GraphEdge(this, port, port.position.distanceFrom(port.position).toInt())
+                    val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
                     connections.add(conn)
                     counter++
                 }
@@ -142,49 +131,22 @@ object GraphUtils {
 
         Logger.log("Number of connections before making the world round: ${connections.size} connections")
 
-        val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -179 }
-        val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 179 }
+        val leftSideOfWorld = nodes.filter { it.position.lon.toInt() == -180 }
+        val rightSideOfWorld = nodes.filter { it.position.lon.toInt() == 180 }
 
-        Logger.log("Number on left side: ${leftSideOfWorld.size}", LogType.DEBUG)
-        Logger.log("Number on right side: ${rightSideOfWorld.size}", LogType.DEBUG)
-
-//        for (t in 0 until leftSideOfWorld.size) {
-//            val a = leftSideOfWorld[t]
-//            val b = rightSideOfWorld[t]
-//            assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
-//            val conn = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
-//            connections.addAll(conn)
-//        }
-
-//        val a = leftSideOfWorld[35]
-//        val b = rightSideOfWorld[35]
-//        assert(a.position.lat == b.position.lat) { "Not equal latitude when connecting the round world" }
-//        val conns = listOf(GraphEdge(a, b, 0), GraphEdge(b, a, 0)) //Distance is 0
-//        connections.addAll(conns)
-//
         rightSideOfWorld.zip(leftSideOfWorld).forEach {
-//            val conn = GraphEdge(it.first, it.second, it.first.position.distanceFrom(it.second.position).toInt()) //Distance is 0
-            val conn = listOf(GraphEdge(it.first, it.second, 0), GraphEdge(it.second, it.first, 0)) //Distance is 0
-            connections.addAll(conn)
+            connections.add(GraphEdge(it.first, it.second, 0)) //Distance is 0
         }
 
-
-        //Hard test: Removing all nodes and connections in the middle of the world:
-//        nodes.removeIf { it.position.lon.toInt() in -26..100 }
-//        connections.removeIf { it.fromNode.position.lon.toInt() in -26..100 || it.toNode.position.lon.toInt() in -26..100 }
-
-
-        val geoJson = GeoJson.edgesToGeoJson(connections)
+        val edgesAsGeoJson = GeoJson.edgesToGeoJson(connections)
         Logger.log("Number of connections after making the world round: ${connections.size} connections")
 
         val directedConnections = connections
                 .map { listOf(it, it.createFlipped()) }
                 .flatten()
+                .also { Logger.log("(${it.size} directed connections)") }
 
-        Logger.log("(${directedConnections.size} directed connections)")
-
-
-        return Graph(directedConnections, nodes + ports)
+        return Graph(directedConnections, nodes)
     }
 
     fun createKlavenessGraph(klavenessPolygons: List<KlavenessPolygon>, ports: List<GraphPortNode>, sanitizedGroupedPoints: Set<GraphNode>, worldCountries: List<Polygon>): Graph {

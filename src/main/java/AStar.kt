@@ -24,7 +24,7 @@ data class NodeRecord(
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): Pair<List<GraphEdge>?,Long> {
+    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): Pair<List<GraphEdge>, Long> {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -169,8 +169,6 @@ object AStar {
 
                 }
 
-                assert(endNodeRecord != null)
-
                 endNodeRecord.costSoFar = endNodeCost
                 endNodeRecord.connection = connection
                 endNodeRecord.estimatedTotalCost = endNodeCost + endNodeHeuristic
@@ -240,9 +238,9 @@ fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
 }
 
 fun Graph.getOutgoingConnectionsFrom(node: NodeRecord): Set<GraphEdge> {
-    return this.edges.filter {
-        it.fromNode == node.node
-    }.toSet()
+    return this.edges
+            .filter { it.fromNode == node.node }
+            .toSet()
 }
 
 fun List<NodeRecord>.containsNode(node: GraphNode): Boolean {

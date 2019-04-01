@@ -3,7 +3,6 @@ import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
 import Utilities.*
-import ch.hsr.geohash.GeoHash
 
 
 fun main() {
@@ -74,9 +73,9 @@ fun main() {
     }
 
     val allPoints = points + portPoints
-
     println("Total number of nodes: ${allPoints.size}")
-
+    val pointsJsonString = Utils.toJsonString(allPoints)
+    println(pointsJsonString)
 
 //    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(32) }
 //            .map { (key, list) ->
@@ -85,25 +84,21 @@ fun main() {
 //            }
 //            .toSet()
 
-    val pointsJsonString = Utils.toJsonString(allPoints)
-    println(pointsJsonString)
+
 
     val graph = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
 //    val graph = GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
 
     Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
 
-    val start = graph.getPortById(Config.startPortId)
-    val goal = graph.getPortById(Config.goalPortId)
-
-
-
+    val startNode = graph.getPortById(Config.startPortId)
+    val goalNode = graph.getPortById(Config.goalPortId)
 
     val ship = Ship("Test ship 1", 1000, 25, 100).apply {
         addCostFunction(PolygonCost(1.0f, Integer.MAX_VALUE, "assets/constraints/suez-polygon.geojson"))
-//        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
-    }
+        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
+    }
 
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
@@ -111,22 +106,16 @@ fun main() {
 
     val intermediateTime = System.currentTimeMillis()
 
-//    val (path1, cost1) = AStar.runAStar(graph, start, goal, ship, isLoaded = false)!!
-//    val geoJson1 = Utilities.GeoJson.pathToGeoJson(path1, color = "#009933", label = "$cost1")
-//    Logger.log("Testpath:")
-//    println(geoJson1)
-//    val (path1, cost1) = graph.performPathfindingBetweenPorts(start, goal, ship, isLoaded = false)!!
-
-    val (path, cost) = AStar.startAStar(graph, start, goal, possibleLoadingPortsWithPortPrice, ship, 1000)
+    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()
 
-    println("Start: ${start.name}")
-    for (item in path!!) {
-        println("From ${item.fromNode}      -       To ${item.toNode}")
-    }
-    println("End: ${goal.name}")
+    println("Start: ${startNode.name}")
+//    for (item in path!!) {
+//        println("From ${item.fromNode}      -       To ${item.toNode}")
+//    }
+    println("End: ${goalNode.name}")
 
 
     val geoJson = Utilities.GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
