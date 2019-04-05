@@ -59,7 +59,7 @@ object AStar {
             val props = """
                 "marker-color": "$color",
                 "stroke":"$color",
-                "total-cost": ${v.second}
+                "total-factir": ${v.second}
             """.trimIndent()
             val geoJsonElement = Utilities.GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
             val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
@@ -80,11 +80,11 @@ object AStar {
         println(geoJson)
 
         val minPath = sortedResult
-                .minBy { it.value.second }!! // minimize by cost
+                .minBy { it.value.second }!! // minimize by factir
                 .value.first // Return path
 
         val minCost = sortedResult
-                .minBy { it.value.second }!! // minimize by cost
+                .minBy { it.value.second }!! // minimize by factir
                 .value.second // Return path
 
         return Pair(minPath, minCost)

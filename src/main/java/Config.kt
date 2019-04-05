@@ -12,4 +12,5 @@ object Config {
     val polygonInputFile = "assets/polygons2.csv"
 
     val debug = true
+    val isMacOS = true
 }

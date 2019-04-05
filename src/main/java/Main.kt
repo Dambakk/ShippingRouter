@@ -1,4 +1,5 @@
 import CostFunctions.PolygonCost
+import CostFunctions.PolygonGradientCost
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
@@ -12,6 +13,8 @@ fun main() {
     val startTime = System.currentTimeMillis()
 
     val worldCountries = Utilities.GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
+
+
 //    val test = FileInputStream("world-borders.shp").channel
 
 //    val f = File("world-borders.shp")
@@ -95,14 +98,16 @@ fun main() {
     val goalNode = graph.getPortById(Config.goalPortId)
 
     val ship = Ship("Test ship 1", 1000, 25, 100).apply {
-        addCostFunction(PolygonCost(1.0f, Integer.MAX_VALUE, "assets/constraints/suez-polygon.geojson"))
+        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
+        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
 
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
+    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
-    val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
+//    val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
 
     val intermediateTime = System.currentTimeMillis()
 
@@ -127,5 +132,24 @@ fun main() {
     Logger.log("Total duration: \t\t${(endTime - startTime) / 1000.0} seconds")
 
     Logger.log("Done")
+
+    if (Config.isMacOS) {
+        try {
+            val notificationCommand = listOf(
+                    "/usr/local/Cellar/terminal-notifier/2.0.0/terminal-notifier.app/Contents/MacOS/terminal-notifier",
+                    "-title 'Shipping Router project'",
+                    "-message 'Your run has finished!'",
+                    "-sound 'default'"
+            )
+
+            Runtime.getRuntime().exec(notificationCommand.toTypedArray())
+        } catch (e: Exception) {
+            Logger.log("When running on MacOS you can install terminal-notifier to get a system notification when " +
+                    "the pathfinding is complete.")
+            Logger.log("Install by running: 'brew install terminal-notifier'.")
+        }
+
+    }
+
 
 }

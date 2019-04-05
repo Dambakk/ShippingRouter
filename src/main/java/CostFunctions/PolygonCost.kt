@@ -3,7 +3,6 @@ package CostFunctions
 import Models.GraphEdge
 import Models.GraphNode
 import Utilities.GeoJson
-import Utilities.flip
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
@@ -20,7 +19,7 @@ class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: St
 
     override fun getCost(node: GraphNode): Int = if (GeometryFactory.createPointFromInternalCoord(Coordinate(node.position.lon, node.position.lat), polygon)
                     .coveredBy(polygon)) {
-        println("I AM ADDING A COST OF $cost!!!")
+//        println("I AM ADDING A COST OF $factir!!!")
         cost
     } else {
         0
