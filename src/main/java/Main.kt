@@ -111,6 +111,8 @@ fun main() {
 
     val intermediateTime = System.currentTimeMillis()
 
+    val loadingPort = graph.getPortById("JPETA")
+//    val (path, cost) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingPort, 500, ship, 1000)
     val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")
 

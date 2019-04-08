@@ -19,7 +19,7 @@ object GraphUtils {
         var connections = mutableListOf<GraphEdge>()
         val nodesMap = mutableMapOf<Pair<Int, Int>, GraphNode>()
 
-        val pb = ProgressBar("Creating nodes...", 119 * 360)
+        val pb = ProgressBar("Creating nodes...", 119 * 360, 300)
 
         for (i in 31..150 step step) {
             val lat = i - 90

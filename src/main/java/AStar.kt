@@ -34,14 +34,14 @@ object AStar {
 
         val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Long>>()
 
-        possibleLoadingPortsWithPrices.forEach { portId, price ->
+        possibleLoadingPortsWithPrices.forEach { portId, pricePrTon ->
             val loadingPort = graph.getPortById(portId)
             Logger.log("Evaluating for loading port: $loadingPort.")
             val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)!!
 //            Logger.log("Reached loading port.", LogType.DEBUG)
             val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true)!!
 
-            result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * price))
+            result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * pricePrTon))
 
         }
 
@@ -126,7 +126,7 @@ object AStar {
             }
 
 //            val connections = getConnectionsForNode(currentNode)
-            val connections = getOutgoingConnectionsFrom(currentNode)
+            val connections = getOutgoingConnectionsFromNodeRecord(currentNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode = connection.toNode // Directed graph
@@ -237,9 +237,15 @@ fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
     }.toSet()
 }
 
-fun Graph.getOutgoingConnectionsFrom(node: NodeRecord): Set<GraphEdge> {
+fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord): Set<GraphEdge> {
     return this.edges
             .filter { it.fromNode == node.node }
+            .toSet()
+}
+
+fun Graph.getOutgoingConnectionsFromNode(node: GraphNode): Set<GraphEdge> {
+    return this.edges
+            .filter { it.fromNode == node }
             .toSet()
 }
 
