@@ -9,9 +9,14 @@ data class NodeRecord(
         var node: GraphNode,
         var connection: GraphEdge?,
         var costSoFar: Long,
+        var timeSoFar: Long,
         var estimatedTotalCost: Long
 ) {
-    constructor(node: GraphNode) : this(node, null, -1, -1)
+    constructor(node: GraphNode) : this(node = node,
+            connection = null,
+            costSoFar = -1,
+            timeSoFar = -1,
+            estimatedTotalCost = -1)
 
     fun flipConnectionNodes(): NodeRecord {
         val tmp = connection?.fromNode
@@ -90,16 +95,8 @@ object AStar {
         return Pair(minPath, minCost)
     }
 
-
-    fun runAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
-        return graph.performPathfindingBetweenPorts(startNode, goalNode, ship, isLoaded)
-    }
-
-
-    fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean): Pair<MutableList<GraphEdge>, Long>? {
-        //TODO: Replace estimatedTotalCost with heuristic function
-        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
-
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean, startTime: Long = 0L): Pair<MutableList<GraphEdge>, Long>? {
+        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
 
         val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
         val pb = ProgressBar("From ${startNode.name} to ${goalNode.name}: ", totalDist)
@@ -133,7 +130,8 @@ object AStar {
 
 //                val endNodeCost = currentNode.costSoFar + connection.distance
 //                val endNodeCost = (currentNode.costSoFar + ship.calculateCost(connection, isLoaded)/1000.0).toInt()
-                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded)
+                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, currentNode.timeSoFar)
+                val endNodeTime: Long = currentNode.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
 
                 var endNodeRecord: NodeRecord?
                 var endNodeHeuristic: Long
@@ -170,6 +168,7 @@ object AStar {
                 }
 
                 endNodeRecord.costSoFar = endNodeCost
+                endNodeRecord.timeSoFar = endNodeTime
                 endNodeRecord.connection = connection
                 endNodeRecord.estimatedTotalCost = endNodeCost + endNodeHeuristic
 

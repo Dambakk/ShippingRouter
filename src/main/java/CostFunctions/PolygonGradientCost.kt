@@ -7,7 +7,7 @@ import Utilities.distanceFrom
 import org.locationtech.jts.geom.Polygon
 import kotlin.math.abs
 
-class PolygonGradientCost(override var weight: Float, val factor: Int, geoJsonFilePath: String) : CostFunction {
+class PolygonGradientCost(override var weight: Float, val factor: Int, geoJsonFilePath: String) : BaseCostFunction {
     val polygon: Polygon
 
     init {

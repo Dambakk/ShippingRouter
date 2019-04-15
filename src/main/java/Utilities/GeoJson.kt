@@ -152,7 +152,7 @@ object GeoJson {
 
         val element = createGeoJsonElement(GeoJsonType.LINE_STRING, coords, props)
 
-        return element //getGeoJson(element, "")
+        return getGeoJson(element)
     }
 
     fun edgesToGeoJson(edges: List<GraphEdge>): String {

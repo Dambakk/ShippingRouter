@@ -4,21 +4,6 @@ import Utilities.LogType
 import Utilities.Logger
 import me.tongfei.progressbar.ProgressBar
 
-data class ExhaustiveNodeRecord(
-        var node: GraphNode,
-        var connection: GraphEdge?,
-        var costSoFar: Long
-) {
-    constructor(node: GraphNode) : this(node, null, 0)
-
-    fun flipConnectionNodes(): ExhaustiveNodeRecord {
-        val tmp = connection?.fromNode
-        connection?.fromNode = connection?.toNode!!
-        connection?.toNode = tmp!!
-        return this
-    }
-}
-
 object ExhaustiveSearch {
 
     private lateinit var startNode: GraphNode
@@ -26,6 +11,7 @@ object ExhaustiveSearch {
     private lateinit var graph: Graph
     private lateinit var graphMap: Map<Position, GraphNode>
     private lateinit var costMap: MutableMap<Position, Long>
+    private lateinit var timeMap: MutableMap<Position, Long>
     private lateinit var ship: Ship
     private lateinit var progressBar: ProgressBar
     private lateinit var prevBest: MutableMap<Position, GraphNode>
@@ -49,6 +35,9 @@ object ExhaustiveSearch {
         this.costMap = graph.nodes
                 .map { it.position to -1L }
                 .toMap() as MutableMap
+        this.timeMap = graph.nodes
+                .map { it.position to -1L }
+                .toMap() as MutableMap
         this.progressBar = ProgressBar("Exhaustive search progress part 1:", graph.nodes.size.toLong(), 500)
         this.prevBest = mutableMapOf()
 
@@ -67,6 +56,9 @@ object ExhaustiveSearch {
 
         // Reset variables
         this.costMap = graph.nodes
+                .map { it.position to -1L }
+                .toMap() as MutableMap
+        this.timeMap = graph.nodes
                 .map { it.position to -1L }
                 .toMap() as MutableMap
         this.progressBar = ProgressBar("Exhaustive search progress part 2:", graph.nodes.size.toLong(), 500)
@@ -92,7 +84,7 @@ object ExhaustiveSearch {
     }
 
 
-    private fun getPathFromMap(prevBest: Map<Position, GraphNode>, startNode: GraphNode, goalNode: GraphNode): Pair<List<GraphEdge>, Long> {
+    private fun getPathFromMap(prevBest: Map<Position, GraphNode>, startNode: GraphNode, goalNode: GraphNode): Triple<List<GraphEdge>, Long, Long> {
         val path = mutableListOf<GraphEdge>()
         var currentNode = goalNode
         var prevNode = prevBest[currentNode.position]
@@ -103,9 +95,9 @@ object ExhaustiveSearch {
             prevNode = prevBest[currentNode.position]
         }
 
-        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} from $startNode to $goalNode.")
+        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} and time spent as ${timeMap[goalNode.position]} from $startNode to $goalNode.")
 
-        return Pair(path.asReversed(), costMap[goalNode.position]!!)
+        return Triple(path.asReversed(), costMap[goalNode.position]!!, timeMap[goalNode.position]!!)
     }
 
     /**
@@ -124,8 +116,9 @@ object ExhaustiveSearch {
 
             val prevNode = edge.fromNode
             val nextNode = edge.toNode
-            val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded)
-            val continuePath = saveCost(nextNode, prevNode, cost)
+            val newTime = timeMap[prevNode.position]!! + ship.calculateTimeSpentOnEdge(edge)
+            val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime))
+            val continuePath = saveCost(nextNode, prevNode, cost, newTime)
             if (!continuePath) {
 //                return cost
                 continue@hey
@@ -147,7 +140,7 @@ object ExhaustiveSearch {
      * Returns false if this is a dead end or a path with a higher cost than previously
      * achieved.
      */
-    private fun saveCost(nextNode: GraphNode, prevNode: GraphNode, cost: Long): Boolean {
+    private fun saveCost(nextNode: GraphNode, prevNode: GraphNode, cost: Long, newTime: Long): Boolean {
         val oldCost = costMap[nextNode.position]
         return when {
             oldCost == null -> {
@@ -160,6 +153,7 @@ object ExhaustiveSearch {
                 }
                 costMap[nextNode.position] = cost
                 prevBest[nextNode.position] = prevNode
+                timeMap[nextNode.position] = newTime
                 nodesVisited++
                 this.progressBar.step()
                 true
@@ -170,6 +164,7 @@ object ExhaustiveSearch {
                 }
                 prevBest[nextNode.position] = prevNode
                 costMap[nextNode.position] = cost
+                timeMap[nextNode.position] = newTime
                 true
             }
             oldCost <= cost -> {

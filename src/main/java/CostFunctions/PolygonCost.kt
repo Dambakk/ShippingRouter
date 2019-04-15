@@ -8,7 +8,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 
-class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : CostFunction {
+class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : BaseCostFunction {
 
     val polygon: Polygon
 

@@ -1,5 +1,6 @@
 import CostFunctions.PolygonCost
 import CostFunctions.PolygonGradientCost
+import CostFunctions.PortServiceTimeWindowCost
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
@@ -101,6 +102,7 @@ fun main() {
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
         addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
+        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 700_000..800_000L))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
 
@@ -108,29 +110,46 @@ fun main() {
     val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
+//    val possibleLoadingPortsWithPortPrice = mapOf("USCRP" to 100)
 
-    val intermediateTime = System.currentTimeMillis()
+    val intermediateTime1 = System.currentTimeMillis()
 
-    val loadingPort = graph.getPortById("JPETA")
-//    val (path, cost) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingPort, 500, ship, 1000)
+    val loadingPort = graph.getPortById("ARRGA")
+    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingPort, 100, ship, 1000)
+    val intermediateTime2 = System.currentTimeMillis()
     val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()
 
-    println("Start: ${startNode.name}")
-//    for (item in path!!) {
-//        println("From ${item.fromNode}      -       To ${item.toNode}")
+
+//    path.zip(pathBruteForce).forEach {
+//        if (it.first != it.second) {
+//            Logger.log("Paths are not equal", LogType.WARNING)
+//        }
+//        assert(it.first == it.second)
 //    }
-    println("End: ${goalNode.name}")
 
 
-    val geoJson = Utilities.GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
-    println(geoJson)
+    val geoJsonAStar = Utilities.GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
+    val geoJsonExhaustice = Utilities.GeoJson.pathToGeoJson(pathBruteForce, color = "#42f474", label = "$costBruteForce")
+    println("-----------------------------------")
+    println(" ")
+    println("A* solution:")
+    println(geoJsonAStar)
+    println("A* cost: $cost")
+    println(" ")
+    println("-----------------------------------")
+    println(" ")
+    println("Brute force solution:")
+    println(geoJsonExhaustice)
+    println("Brute force cost: $costBruteForce")
+    println("-----------------------------------")
 //    writeJsonToFile(geoJson)
 
-    Logger.log("Preparation time: \t${(intermediateTime - startTime) / 1000.0} seconds")
-    Logger.log("A-star duration: \t${(endTime - intermediateTime) / 1000.0} seconds")
+    Logger.log("Preparation time: \t${(intermediateTime1 - startTime) / 1000.0} seconds")
+    Logger.log("Exhaustice search:\t${(intermediateTime2 - intermediateTime1) / 1000.0} seconds, \t|\tCost: $costBruteForce")
+    Logger.log("A-star duration: \t${(endTime - intermediateTime2) / 1000.0} seconds, \t|\tCost: $cost")
     Logger.log("Total duration: \t\t${(endTime - startTime) / 1000.0} seconds")
 
     Logger.log("Done")
