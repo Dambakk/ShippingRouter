@@ -58,6 +58,10 @@ class LineStringDsl : FeatureDsl() {
         coordinates.add(lngLat)
     }
 
+//    infix fun add(lngLat: InnerLngLat) {
+//        coordinates.add(lngLat.value)
+//    }
+
     override fun geoJsonObject(): GeoJsonObject {
         assert(coordinates.size > 1) { "LineString must have at least two coordinates" }
         return LineString().apply {
@@ -76,6 +80,8 @@ class PolygonDsl : FeatureDsl() {
     fun add(lngLat: LngLatAlt) {
         coordinates.add(lngLat)
     }
+
+    infix fun add()
 
     public override fun geoJsonObject(): GeoJsonObject {
         assert(coordinates.size > 2) { "Polygon must have at least three coordinates" }
@@ -139,15 +145,19 @@ fun featureCollection(init: FeatureCollectionDsl.() -> Unit): FeatureCollection 
 fun testGeoJsonCreator(): FeatureCollection {
 
     return featureCollection {
-        point(69.0, 69.69)
+        point(69.0, 69.69) {
+            "marker-color" value "#ff0000"
+        }
         point(0.0, 0.0) {
             "name" value "Test"
+            "marker-color" value "#363636"
         }
         lineString {
+
             add(coord lat 15.0 lng 69.0)
             add(coord lat 12.0 lng 71.0)
             "description" value "testLineString"
-            "lineColor" value "#F3F2F1"
+            "line-color" value "#F3F2F1"
             "distance" value 158
         }
         polygon {
@@ -155,14 +165,14 @@ fun testGeoJsonCreator(): FeatureCollection {
             add(coord lat 68.0 lng 70.0)
             add(coord lat 67.0 lng 77.0)
             "description" value "test"
-            "fillColor" value "#ff0000"
+            "fill" value "#ff0000"
         }
         multiPolygon {
             polygon {
                 add(coord lat 69.0 lng 70.0)
                 add(coord lat 68.0 lng 70.0)
                 add(coord lat 67.0 lng 77.0)
-                "color" value "#0000ff"
+                "fill" value "#0000ff"
             }
             polygon {
                 add(coord lat 29.0 lng 61.0)
@@ -175,7 +185,7 @@ fun testGeoJsonCreator(): FeatureCollection {
                 add(coord lat 17.0 lng 57.0)
             }
             "description" value "TestCountryName"
-            "color" value "#00ff00"
+            "fill" value "#00ff00"
             "area" value 6969
         }
     }

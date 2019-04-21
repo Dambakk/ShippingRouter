@@ -6,8 +6,6 @@ import Models.GraphPortNode
 import Models.Ship
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.wololo.geojson.GeoJSONFactory
-import org.wololo.jts2geojson.GeoJSONWriter
 
 
 fun main() {
