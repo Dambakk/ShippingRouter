@@ -5,11 +5,21 @@ import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
 import Utilities.*
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.wololo.geojson.GeoJSONFactory
+import org.wololo.jts2geojson.GeoJSONWriter
 
 
 fun main() {
 
 //    readShapeFile()
+    val test = testGeoJsonCreator()
+
+    val json = ObjectMapper().writeValueAsString(test)
+
+    println(json)
+
+    return
 
     val startTime = System.currentTimeMillis()
 

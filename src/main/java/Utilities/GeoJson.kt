@@ -20,8 +20,8 @@ infix fun GraphNode.notIn(countries: List<Polygon>) = Coordinate(this.position.l
 //        !countries.any { it.contains(GeometryFactory().createPoint(Coordinate(this.position.lon, this.position.lat))) }
 
 
-data class GeoJsonObject(val type: String,
-                         val features: List<GeoJsonFeature>) {
+data class ShippingGeoJsonObject(val type: String,
+                                 val features: List<GeoJsonFeature>) {
 
     /**
      * If geojson object only contains one polygon, this function returns a list
@@ -180,7 +180,7 @@ object GeoJson {
     fun readWorldCountriesGeoJSON(path: String): List<Polygon> {
         val gson = Gson()
         val reader = JsonReader(FileReader(path))
-        val data = gson.fromJson<GeoJsonObject>(reader, GeoJsonObject::class.java)
+        val data = gson.fromJson<ShippingGeoJsonObject>(reader, ShippingGeoJsonObject::class.java)
         val worldCountryPolygons = data.getAllPolygonsLocationTech()
         return worldCountryPolygons
     }
@@ -189,7 +189,7 @@ object GeoJson {
     fun readSinglePolygonGeoJson(path: String): Polygon {
         val gson = Gson()
         val reader = JsonReader(FileReader(path))
-        val data = gson.fromJson<GeoJsonObject>(reader, GeoJsonObject::class.java)
+        val data = gson.fromJson<ShippingGeoJsonObject>(reader, ShippingGeoJsonObject::class.java)
         return data.getAllPolygonsLocationTech().first()
     }
 
