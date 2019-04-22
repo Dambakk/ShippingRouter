@@ -176,6 +176,15 @@ object GeoJson {
 
     }
 
+    fun newEdgesToGeoJson(edges: List<GraphEdge>, color: String = "#009933", thickness: String = "5") =
+            featureCollection {
+                lineString {
+                    edges.map { add(coord lat it.fromNode.position.lat lng it.fromNode.position.lon) }
+                    "stroke" value color
+                    "stroke-width" value thickness
+                }
+            }.toGeoJson()
+
 
     fun readWorldCountriesGeoJSON(path: String): List<Polygon> {
         val gson = Gson()

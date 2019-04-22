@@ -1,5 +1,6 @@
 package Utilities
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.geojson.*
 
 abstract class FeatureDsl {
@@ -58,10 +59,6 @@ class LineStringDsl : FeatureDsl() {
         coordinates.add(lngLat)
     }
 
-//    infix fun add(lngLat: InnerLngLat) {
-//        coordinates.add(lngLat.value)
-//    }
-
     override fun geoJsonObject(): GeoJsonObject {
         assert(coordinates.size > 1) { "LineString must have at least two coordinates" }
         return LineString().apply {
@@ -80,8 +77,6 @@ class PolygonDsl : FeatureDsl() {
     fun add(lngLat: LngLatAlt) {
         coordinates.add(lngLat)
     }
-
-    infix fun add()
 
     public override fun geoJsonObject(): GeoJsonObject {
         assert(coordinates.size > 2) { "Polygon must have at least three coordinates" }
@@ -141,6 +136,8 @@ fun featureCollection(init: FeatureCollectionDsl.() -> Unit): FeatureCollection 
                 .apply(init)
                 .toGeoJson()
 
+fun FeatureCollection.toGeoJson() =
+        ObjectMapper().writeValueAsString(this)
 
 fun testGeoJsonCreator(): FeatureCollection {
 
@@ -153,8 +150,7 @@ fun testGeoJsonCreator(): FeatureCollection {
             "marker-color" value "#363636"
         }
         lineString {
-
-            add(coord lat 15.0 lng 69.0)
+            add(coord lng 15.0 lat 69.0)
             add(coord lat 12.0 lng 71.0)
             "description" value "testLineString"
             "line-color" value "#F3F2F1"
@@ -189,8 +185,4 @@ fun testGeoJsonCreator(): FeatureCollection {
             "area" value 6969
         }
     }
-}
-
-fun FeatureCollectionDsl.toGeoJson() {
-
 }

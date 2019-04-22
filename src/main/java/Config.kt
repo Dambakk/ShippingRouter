@@ -1,7 +1,8 @@
 
 object Config {
 
-    val portIdsOfInterest = listOf<String>("ARRGA", "AUBUY", "BMFPT", "CNTAX", "CNTNJ", "CNTXG", "CNXGA", "CNZJG", "JPETA", "JPKSM", "JPSAK", "KRYOS", "PHMNL", "QAMES", "SAJUB", "TWMLI", "USCRP", "USFPO", "USHOU", "USLCH", "USPCR", "USPLQ", "USWWO")
+    val portIdsOfInterestFull = listOf<String>("ARRGA", "AUBUY", "BMFPT", "CNTAX", "CNTNJ", "CNTXG", "CNXGA", "CNZJG", "JPETA", "JPKSM", "JPSAK", "KRYOS", "PHMNL", "QAMES", "SAJUB", "TWMLI", "USCRP", "USFPO", "USHOU", "USLCH", "USPCR", "USPLQ", "USWWO")
+    val portIdsOfInterestMini = listOf<String>("ARRGA",  "BMFPT", "CNTAX", "CNXGA", "JPETA", "KRYOS", "PHMNL", "QAMES", "USFPO",  "USWWO")
 
     val startPortId = "CNXGA"
     val goalPortId = "USWWO"

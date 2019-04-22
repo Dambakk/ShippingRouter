@@ -7,66 +7,31 @@ import Models.Ship
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
 
-
 fun main() {
 
-//    readShapeFile()
     val test = testGeoJsonCreator()
-
     val json = ObjectMapper().writeValueAsString(test)
-
     println(json)
-
-    return
 
     val startTime = System.currentTimeMillis()
 
     val worldCountries = Utilities.GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
 
-
-//    val test = FileInputStream("world-borders.shp").channel
-
-//    val f = File("world-borders.shp")
-//    val dataStore = ShapefileDataStore(f.toURI().toURL())
-//    val featureSource = dataStore.featureSource
-//    print(featureSource.features.size())
-//    val geomAttrName = featureSource.getSchema()
-//            .getGeometryDescriptor().getLocalName()
-
-
-    /**
-     * Trades:
-     */
-//    val trades = Utilities.FileHandler.readTradePatternsFile()
-//    println("Received ${trades.size} trades")
-//
-//    val timeAtSea = mutableMapOf<Pair<String, String>, MutableList<Int>>()
-//    trades.forEach {
-//        if (timeAtSea[it.getFromAndToAlphabetical()] == null) {
-//            timeAtSea[it.getFromAndToAlphabetical()] = mutableListOf(it.atSea)
-//        } else {
-//            timeAtSea[it.getFromAndToAlphabetical()]!!.add(it.atSea)
-//        }
-//    }
-//
-//    val timeAtSeaAverage = timeAtSea.map {
-//        it.key to it.value.average()
-//    }
-//
-//    println("Filtered, combined destinations, and calculated average travel time. Got ${timeAtSeaAverage.size} elements")
-
-    val portPoints = Utilities.FileHandler.readPortsFile()
+    val portPoints = FileHandler.readPortsFile()
             .filter { !it.deleted }
-            .filter { it.portId in Config.portIdsOfInterest }
+            .filter { it.portId in Config.portIdsOfInterestFull }
             .map { GraphPortNode(it.name, it.position, null, it.portId) }
+            .also { ports -> ports.forEach {
+                assert( it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Port position invalid: ${it.position}, ${it.portId}"} }
+            }
             .also { println("Number of ports: ${it.size}") }
 
-    portPoints.forEach {
-        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Port position invalid: ${it.position}, ${it.portId}" }
-    }
+    val subSetOfPorts = portPoints
+            .filter { it.portId in Config.portIdsOfInterestMini }
+            .also { println("Number of ports (mini): ${it.size}") }
 
 
-    val polygons = Utilities.FileHandler.readPolygonsFile()
+    val polygons = FileHandler.readPolygonsFile()
     println("Number of polygons: ${polygons.size}")
 
     val points = polygons
@@ -88,14 +53,6 @@ fun main() {
     println("Total number of nodes: ${allPoints.size}")
     val pointsJsonString = Utils.toJsonString(allPoints)
     println(pointsJsonString)
-
-//    val groupedPoints = points.groupBy { it.geohash.getGeoHashWithPrecision(32) }
-//            .map { (key, list) ->
-//                val newName = list.map { it.name }.toSet().joinToString(separator = "+")
-//                GraphNode(newName, list.first().position, GeoHash.fromBinaryString(key))
-//            }
-//            .toSet()
-
 
 
     val graph = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
