@@ -38,7 +38,7 @@ object ExhaustiveSearch {
         this.timeMap = graph.nodes
                 .map { it.position to -1L }
                 .toMap() as MutableMap
-        this.progressBar = ProgressBar("Exhaustive search progress part 1:", graph.nodes.size.toLong(), 500)
+        this.progressBar = ProgressBar("Exhaustive search part 1:", graph.nodes.size.toLong(), 500)
         this.prevBest = mutableMapOf()
 
 
@@ -61,7 +61,7 @@ object ExhaustiveSearch {
         this.timeMap = graph.nodes
                 .map { it.position to -1L }
                 .toMap() as MutableMap
-        this.progressBar = ProgressBar("Exhaustive search progress part 2:", graph.nodes.size.toLong(), 500)
+        this.progressBar = ProgressBar("Exhaustive search part 2:", graph.nodes.size.toLong(), 500)
         this.prevBest = mutableMapOf()
         nodesVisited = 0
         edgesVisited = 0
@@ -111,7 +111,6 @@ object ExhaustiveSearch {
         val allNextConnections = mutableListOf<GraphEdge>()
 
         hey@ for (edge in edges) {
-//            progressBar.step()
             edgesVisited++
 
             val prevNode = edge.fromNode
@@ -120,20 +119,18 @@ object ExhaustiveSearch {
             val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime))
             val continuePath = saveCost(nextNode, prevNode, cost, newTime)
             if (!continuePath) {
-//                return cost
                 continue@hey
             } else if (nextNode == goalNode) {
                 continue@hey
-//                return costMap[goalNode.position]!!
             } else {
                 val connections = graph.getOutgoingConnectionsFromNode(nextNode).toMutableList()
                 connections.removeIf { it.fromNode == nextNode && it.toNode == edge.fromNode } //Remove where we came from
                 allNextConnections.addAll(connections)
             }
         }
-        return expandNodesRecursively(allNextConnections, isLoaded, goalNode)
+        expandNodesRecursively(allNextConnections, isLoaded, goalNode)
+        return
     }
-
 
     /**
      * Returns true if not a dead end and search should continue down current path

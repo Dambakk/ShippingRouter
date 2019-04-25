@@ -5,7 +5,12 @@ object Config {
     val portIdsOfInterestMini = listOf<String>("ARRGA",  "BMFPT", "CNTAX", "CNXGA", "JPETA", "KRYOS", "PHMNL", "QAMES", "USFPO",  "USWWO")
 
     val startPortId = "CNXGA"
-    val goalPortId = "USWWO"
+//    val startPortId = "CNXGA"
+//    val goalPortId = "USWWO"
+    val goalPortId = "JPETA"
+
+    val loadingPortId = "CNTAX"
+//    val loadingPortId = "ARRGA"
 
     val saveGeoJsonToFile = true
     val geoJsonFilePath = "output/geoJson/output4.json"

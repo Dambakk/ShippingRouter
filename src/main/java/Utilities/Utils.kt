@@ -8,6 +8,14 @@ import java.awt.Point
 import java.io.File
 import kotlin.Exception
 import kotlin.random.Random
+import org.geotools.filter.function.StaticGeometry.getY
+import org.geotools.filter.function.StaticGeometry.getX
+import org.locationtech.geomesa.features.serialization.`DimensionalBounds$class`.x
+import org.locationtech.geomesa.features.serialization.`DimensionalBounds$class`.y
+
+
+
+
 
 object Utils {
 
@@ -30,7 +38,7 @@ object Utils {
  * lat2, lon2 End point
  * @returns Distance in Meters
  */
-fun Position.distanceFrom(other: Position): Double {
+infix fun Position.distanceFrom(other: Position): Double {
 
     val lat1 = this.lat
     val lon1 = this.lon
@@ -49,6 +57,13 @@ fun Position.distanceFrom(other: Position): Double {
     distance = Math.pow(distance, 2.0)
 
     return Math.sqrt(distance)
+}
+
+infix fun Position.angleBetween(other: Position): Double {
+    val deltaY = this.lon - other.lon
+    val deltaX = other.lat - this.lat
+    val result = Math.toDegrees(Math.atan2(deltaY, deltaX))
+    return if (result < 0) 360.0 + result else result
 }
 
 fun Position.flip(): Position {

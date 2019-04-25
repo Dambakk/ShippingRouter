@@ -1,11 +1,13 @@
 import CostFunctions.PolygonCost
 import CostFunctions.PolygonGradientCost
 import CostFunctions.PortServiceTimeWindowCost
+import Models.GraphEdge
 import Models.GraphNode
 import Models.GraphPortNode
 import Models.Ship
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.marcinmoskala.math.combinations
 
 fun main() {
 
@@ -15,7 +17,7 @@ fun main() {
 
     val startTime = System.currentTimeMillis()
 
-    val worldCountries = Utilities.GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
+    val worldCountries = GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
 
     val portPoints = FileHandler.readPortsFile()
             .filter { !it.deleted }
@@ -30,30 +32,31 @@ fun main() {
             .filter { it.portId in Config.portIdsOfInterestMini }
             .also { println("Number of ports (mini): ${it.size}") }
 
-
-    val polygons = FileHandler.readPolygonsFile()
-    println("Number of polygons: ${polygons.size}")
-
-    val points = polygons
-            .asSequence()
-            .map { polygon ->
-                polygon.polygonPoints.map { position ->
-                    val pos = position
-                    GraphNode(polygon.name, pos)
-                }
-            }
-            .flatten()
-            .toList()
-
-    points.forEach {
-        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Node position invalid: ${it.position}" }
-    }
-
-    val allPoints = points + portPoints
-    println("Total number of nodes: ${allPoints.size}")
-    val pointsJsonString = Utils.toJsonString(allPoints)
-    println(pointsJsonString)
-
+//region old
+//    val polygons = FileHandler.readPolygonsFile()
+//    println("Number of polygons: ${polygons.size}")
+//
+//    val points = polygons
+//            .asSequence()
+//            .map { polygon ->
+//                polygon.polygonPoints.map { position ->
+//                    val pos = position
+//                    GraphNode(polygon.name, pos)
+//                }
+//            }
+//            .flatten()
+//            .toList()
+//
+//    points.forEach {
+//        assert(it.position.lat in (-90.0..90.0) && it.position.lon in (-180.0..180.0)) { "Node position invalid: ${it.position}" }
+//    }
+//
+//    val allPoints = points + portPoints
+//    println("Total number of nodes: ${allPoints.size}")
+//    val pointsJsonString = Utils.toJsonString(allPoints)
+//    println(pointsJsonString)
+//
+    //endregion
 
     val graph = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
 //    val graph = GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
@@ -61,28 +64,46 @@ fun main() {
     Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
 
     val startNode = graph.getPortById(Config.startPortId)
+    val loadingNode = graph.getPortById(Config.loadingPortId)
     val goalNode = graph.getPortById(Config.goalPortId)
 
     val ship = Ship("Test ship 1", 1000, 25, 100).apply {
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
         addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
-        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 700_000..800_000L))
+        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
 
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
-    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
+//    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
-//    val possibleLoadingPortsWithPortPrice = mapOf("JPETA" to 100)
+//    val possibleLoadingPortsWithPortPrice = mapOf("CNTAX" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("USCRP" to 100)
 
     val intermediateTime1 = System.currentTimeMillis()
 
-    val loadingPort = graph.getPortById("ARRGA")
-    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingPort, 100, ship, 1000)
+    val resultMap = mutableMapOf<Triple<GraphPortNode, GraphPortNode, GraphPortNode>, Pair<Pair<List<GraphEdge>, Long>, Pair<List<GraphEdge>, Long>>>()
+
+    subSetOfPorts.toSet().combinations(3).forEach { ports ->
+        val p = ports.toList()
+        val startPort = p[0]
+        val loadingPort = p[1]
+        val goalPort = p[2]
+        println("${startPort.name} -> ${loadingPort.name} -> ${goalPort.name}")
+
+//        val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startPort, goalPort, loadingPort, 100, ship, 1000)
+//        val (path, cost) = AStar.startAStar(graph, startPort, goalPort, mapOf(loadingPort.portId to 100), ship, 1000, subSetOfPorts)
+//        resultMap[Triple(startPort, loadingPort, goalPort)] = Pair(Pair(pathBruteForce, costBruteForce), Pair(path, cost))
+
+    }
+
+    println("Number of port combinations: ${subSetOfPorts.toSet().combinations(3).size}")
+
+    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingNode, 100, ship, 1000)
     val intermediateTime2 = System.currentTimeMillis()
-    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000)
+//    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000, subSetOfPorts)
+    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, mapOf(loadingNode.portId to 100), ship, 1000, subSetOfPorts)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()
@@ -96,8 +117,8 @@ fun main() {
 //    }
 
 
-    val geoJsonAStar = Utilities.GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
-    val geoJsonExhaustice = Utilities.GeoJson.pathToGeoJson(pathBruteForce, color = "#42f474", label = "$costBruteForce")
+    val geoJsonAStar = GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
+    val geoJsonExhaustice = GeoJson.pathToGeoJson(pathBruteForce, color = "#42f474", label = "$costBruteForce")
     println("-----------------------------------")
     println(" ")
     println("A* solution:")
@@ -136,6 +157,7 @@ fun main() {
         }
 
     }
+
 
 
 }

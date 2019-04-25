@@ -183,6 +183,8 @@ fun testGeoJsonCreator(): FeatureCollection {
             "description" value "TestCountryName"
             "fill" value "#00ff00"
             "area" value 6969
+
+            "myKey" value 69
         }
     }
 }

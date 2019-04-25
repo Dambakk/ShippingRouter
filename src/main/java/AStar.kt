@@ -1,8 +1,6 @@
-import Models.Graph
-import Models.GraphEdge
-import Models.GraphNode
-import Models.Ship
+import Models.*
 import Utilities.*
+import com.marcinmoskala.math.combinations
 import me.tongfei.progressbar.ProgressBar
 
 data class NodeRecord(
@@ -29,7 +27,15 @@ data class NodeRecord(
 object AStar {
 
 
-    fun startAStar(graph: Graph, startNode: GraphNode, goalNode: GraphNode, possibleLoadingPortsWithPrices: Map<String, Int>, ship: Ship, numTonnes: Int): Pair<List<GraphEdge>, Long> {
+    fun startAStar(
+            graph: Graph,
+            startNode: GraphNode,
+            goalNode: GraphNode,
+            possibleLoadingPortsWithPrices: Map<String, Int>,
+            ship: Ship,
+            numTonnes: Int,
+            subsetOfPorts: List<GraphPortNode>
+    ): Pair<List<GraphEdge>, Long> {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -39,7 +45,9 @@ object AStar {
 
         val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Long>>()
 
-        possibleLoadingPortsWithPrices.forEach { portId, pricePrTon ->
+
+
+        possibleLoadingPortsWithPrices.forEach { (portId, pricePrTon) ->
             val loadingPort = graph.getPortById(portId)
             Logger.log("Evaluating for loading port: $loadingPort.")
             val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)!!
@@ -66,7 +74,7 @@ object AStar {
                 "stroke":"$color",
                 "total-factir": ${v.second}
             """.trimIndent()
-            val geoJsonElement = Utilities.GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
+            val geoJsonElement = GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
             val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
             geoJsonElements.add(geoJsonElement)
             geoJsonElements.add(portPoint)
