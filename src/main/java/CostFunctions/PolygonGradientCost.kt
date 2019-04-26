@@ -7,16 +7,17 @@ import Utilities.distanceFrom
 import org.locationtech.jts.geom.Polygon
 import kotlin.math.abs
 
-class PolygonGradientCost(override var weight: Float, val factor: Int, geoJsonFilePath: String) : BaseCostFunction {
-    val polygon: Polygon
+class PolygonGradientCost(
+        override var weight: Float,
+        val factor: Int,
+        geoJsonFilePath: String
+) : BasePolygonCostFunction {
+
+    override val polygon: Polygon
 
     init {
         assert(weight in 0.0..1.0)
         this.polygon = GeoJson.readSinglePolygonGeoJson(geoJsonFilePath)
-    }
-
-    override fun getCost(node: GraphNode): Int {
-        return 0
     }
 
     override fun getCost(edge: GraphEdge): Int {

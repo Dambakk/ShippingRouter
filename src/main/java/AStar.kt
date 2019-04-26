@@ -138,8 +138,8 @@ object AStar {
 
 //                val endNodeCost = currentNode.costSoFar + connection.distance
 //                val endNodeCost = (currentNode.costSoFar + ship.calculateCost(connection, isLoaded)/1000.0).toInt()
-                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, currentNode.timeSoFar)
                 val endNodeTime: Long = currentNode.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
+                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
 
                 var endNodeRecord: NodeRecord?
                 var endNodeHeuristic: Long

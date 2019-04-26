@@ -12,7 +12,7 @@ class PortServiceTimeWindowCost(override val weight: Float,
         return if (node is GraphPortNode &&
                 node == port &&
                 time !in timeWindow) {
-            Long.MAX_VALUE
+            Long.MAX_VALUE / 2
         } else {
             0L
         }

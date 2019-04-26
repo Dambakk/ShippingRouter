@@ -72,6 +72,7 @@ fun main() {
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
         addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
         addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
+        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
 
@@ -100,7 +101,7 @@ fun main() {
 
     println("Number of port combinations: ${subSetOfPorts.toSet().combinations(3).size}")
 
-    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingNode, 100, ship, 1000)
+//    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingNode, 100, ship, 1000)
     val intermediateTime2 = System.currentTimeMillis()
 //    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000, subSetOfPorts)
     val (path, cost) = AStar.startAStar(graph, startNode, goalNode, mapOf(loadingNode.portId to 100), ship, 1000, subSetOfPorts)
@@ -118,7 +119,7 @@ fun main() {
 
 
     val geoJsonAStar = GeoJson.pathToGeoJson(path, color = "#009933", label = "$cost")
-    val geoJsonExhaustice = GeoJson.pathToGeoJson(pathBruteForce, color = "#42f474", label = "$costBruteForce")
+//    val geoJsonExhaustice = GeoJson.pathToGeoJson(pathBruteForce, color = "#42f474", label = "$costBruteForce")
     println("-----------------------------------")
     println(" ")
     println("A* solution:")
@@ -128,13 +129,13 @@ fun main() {
     println("-----------------------------------")
     println(" ")
     println("Brute force solution:")
-    println(geoJsonExhaustice)
-    println("Brute force cost: $costBruteForce")
+//    println(geoJsonExhaustice)
+//    println("Brute force cost: $costBruteForce")
     println("-----------------------------------")
 //    writeJsonToFile(geoJson)
 
     Logger.log("Preparation time: \t${(intermediateTime1 - startTime) / 1000.0} seconds")
-    Logger.log("Exhaustice search:\t${(intermediateTime2 - intermediateTime1) / 1000.0} seconds, \t|\tCost: $costBruteForce")
+//    Logger.log("Exhaustice search:\t${(intermediateTime2 - intermediateTime1) / 1000.0} seconds, \t|\tCost: $costBruteForce")
     Logger.log("A-star duration: \t${(endTime - intermediateTime2) / 1000.0} seconds, \t|\tCost: $cost")
     Logger.log("Total duration: \t\t${(endTime - startTime) / 1000.0} seconds")
 

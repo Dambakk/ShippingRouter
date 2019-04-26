@@ -8,27 +8,30 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 
-class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : BaseCostFunction {
+class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : BasePolygonCostFunction {
 
-    val polygon: Polygon
+    override val polygon: Polygon
 
     init {
-        assert(weight in 0.0..1.0)
+        assert(weight in 0.0..1.0) { "Weight must be in inclusive range 0.0 to 1.0" }
         this.polygon = GeoJson.readSinglePolygonGeoJson(geoJsonFilePath)
     }
 
-    override fun getCost(node: GraphNode): Int = if (GeometryFactory.createPointFromInternalCoord(Coordinate(node.position.lon, node.position.lat), polygon)
-                    .coveredBy(polygon)) {
-//        println("I AM ADDING A COST OF $factir!!!")
-        cost
-    } else {
-        0
-    }
+    private fun getNodeCost(node: GraphNode) =
+            if (node isCoveredBy polygon) {
+                cost
+            } else {
+                0
+            }
+
+    private infix fun GraphNode.isCoveredBy(polygon: Polygon) =
+            GeometryFactory.createPointFromInternalCoord(Coordinate(this.position.lon, this.position.lat), polygon)
+                    .coveredBy(polygon)
 
     override fun getCost(edge: GraphEdge): Int {
         //TODO: Hente bare fra fromNode
-        val a = getCost(edge.fromNode)
-        val b = getCost(edge.toNode)
+        val a = getNodeCost(edge.fromNode)
+        val b = getNodeCost(edge.toNode)
 
         return a + b
     }
