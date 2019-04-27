@@ -2,6 +2,7 @@ package Models
 
 import Utilities.ShippingObject
 import Utilities.flip
+import java.io.Serializable
 
 fun String.toInt() = if (this.isEmpty()) 0 else this.toInt(10)
 
@@ -93,7 +94,7 @@ data class TradePattern(
     }
 }
 
-data class Position(val lat: Double, val lon: Double) {
+data class Position(val lat: Double, val lon: Double): Serializable {
     override fun equals(other: Any?): Boolean {
         return other is Position &&
                 this.lat == other.lat &&

@@ -12,9 +12,7 @@ import org.geotools.filter.function.StaticGeometry.getY
 import org.geotools.filter.function.StaticGeometry.getX
 import org.locationtech.geomesa.features.serialization.`DimensionalBounds$class`.x
 import org.locationtech.geomesa.features.serialization.`DimensionalBounds$class`.y
-
-
-
+import java.math.BigInteger
 
 
 object Utils {
@@ -25,6 +23,10 @@ object Utils {
     }
 
 }
+
+fun Long.toBigInteger() = BigInteger.valueOf(this)
+fun Int.toBigInteger() = BigInteger.valueOf(toLong())
+fun Double.toBigInteger() = BigInteger.valueOf(toLong())
 
 /**
  * Calculate distance between two points in latitude and longitude taking
@@ -56,12 +58,12 @@ infix fun Position.distanceFrom(other: Position): Double {
 
     distance = Math.pow(distance, 2.0)
 
-    return Math.sqrt(distance)
+    return Math.sqrt(distance) / 1000.0
 }
 
 infix fun Position.angleBetween(other: Position): Double {
     val deltaY = this.lon - other.lon
-    val deltaX = other.lat - this.lat
+    val deltaX = this.lat - other.lat
     val result = Math.toDegrees(Math.atan2(deltaY, deltaX))
     return if (result < 0) 360.0 + result else result
 }

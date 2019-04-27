@@ -6,6 +6,7 @@ import Utilities.GeoJson
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
+import java.math.BigInteger
 
 
 class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : BasePolygonCostFunction {
@@ -24,16 +25,14 @@ class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: St
                 0
             }
 
-    private infix fun GraphNode.isCoveredBy(polygon: Polygon) =
-            GeometryFactory.createPointFromInternalCoord(Coordinate(this.position.lon, this.position.lat), polygon)
-                    .coveredBy(polygon)
 
-    override fun getCost(edge: GraphEdge): Int {
+
+    override fun getCost(edge: GraphEdge): Long {
         //TODO: Hente bare fra fromNode
         val a = getNodeCost(edge.fromNode)
         val b = getNodeCost(edge.toNode)
 
-        return a + b
+        return (a + b).toLong()
     }
 
 }

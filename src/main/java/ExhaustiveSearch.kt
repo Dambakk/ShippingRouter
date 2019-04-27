@@ -116,7 +116,7 @@ object ExhaustiveSearch {
             val prevNode = edge.fromNode
             val nextNode = edge.toNode
             val newTime = timeMap[prevNode.position]!! + ship.calculateTimeSpentOnEdge(edge)
-            val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime))
+            val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime)).toLong()
             val continuePath = saveCost(nextNode, prevNode, cost, newTime)
             if (!continuePath) {
                 continue@hey

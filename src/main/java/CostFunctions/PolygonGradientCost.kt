@@ -4,7 +4,9 @@ import Models.GraphEdge
 import Models.GraphNode
 import Utilities.GeoJson
 import Utilities.distanceFrom
+import Utilities.toBigInteger
 import org.locationtech.jts.geom.Polygon
+import java.math.BigInteger
 import kotlin.math.abs
 
 class PolygonGradientCost(
@@ -20,9 +22,9 @@ class PolygonGradientCost(
         this.polygon = GeoJson.readSinglePolygonGeoJson(geoJsonFilePath)
     }
 
-    override fun getCost(edge: GraphEdge): Int {
+    override fun getCost(edge: GraphEdge): Long {
         val dist = edge.fromNode.position.distanceFrom(edge.toNode.position)
         val lat = (edge.fromNode.position.lat + edge.fromNode.position.lat) / 2
-        return (abs(lat) * dist / factor).toInt()
+        return (abs(lat) * dist / factor).toLong()
     }
 }

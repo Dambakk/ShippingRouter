@@ -1,13 +1,16 @@
+import CostFunctions.PolygonAngledCost
 import CostFunctions.PolygonCost
 import CostFunctions.PolygonGradientCost
 import CostFunctions.PortServiceTimeWindowCost
-import Models.GraphEdge
-import Models.GraphNode
-import Models.GraphPortNode
-import Models.Ship
+import Models.*
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.marcinmoskala.math.combinations
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.math.BigInteger
 
 fun main() {
 
@@ -58,8 +61,26 @@ fun main() {
 //
     //endregion
 
-    val graph = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
-//    val graph = GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
+    val createNewGraph = false
+    val graphFile = "graph"
+
+    val graph = if (createNewGraph) {
+        val g = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
+//    GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
+        ObjectOutputStream(FileOutputStream(graphFile)).use {
+            it.writeObject(g)
+            Logger.log("Graph written to file")
+        }
+        g
+    } else {
+        var g: Graph? = null
+        ObjectInputStream(FileInputStream(graphFile)).use {
+            g = it.readObject() as Graph
+            Logger.log("Graph read from file")
+        }
+            g!!
+    }
+
 
     Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
 
@@ -67,12 +88,16 @@ fun main() {
     val loadingNode = graph.getPortById(Config.loadingPortId)
     val goalNode = graph.getPortById(Config.goalPortId)
 
-    val ship = Ship("Test ship 1", 1000, 25, 100).apply {
+    val ship = Ship("Test ship 1", 1000, 5, 100).apply {
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
         addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
         addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
+//        addCostFunction(PolygonCost(1f, 1000,"assets/constraints/taiwan-strait.geojson"))
+//        addCostFunction(PolygonAngledCost(
+//                1f, "assets/constraints/taiwan-strait.geojson",
+//                100000, 225.0, 90.0))
         addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
-        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
+//        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
 
@@ -84,14 +109,14 @@ fun main() {
 
     val intermediateTime1 = System.currentTimeMillis()
 
-    val resultMap = mutableMapOf<Triple<GraphPortNode, GraphPortNode, GraphPortNode>, Pair<Pair<List<GraphEdge>, Long>, Pair<List<GraphEdge>, Long>>>()
+    val resultMap = mutableMapOf<Triple<GraphPortNode, GraphPortNode, GraphPortNode>, Pair<Pair<List<GraphEdge>, BigInteger>, Pair<List<GraphEdge>, BigInteger>>>()
 
     subSetOfPorts.toSet().combinations(3).forEach { ports ->
         val p = ports.toList()
         val startPort = p[0]
         val loadingPort = p[1]
         val goalPort = p[2]
-        println("${startPort.name} -> ${loadingPort.name} -> ${goalPort.name}")
+//        println("${startPort.name} -> ${loadingPort.name} -> ${goalPort.name}")
 
 //        val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startPort, goalPort, loadingPort, 100, ship, 1000)
 //        val (path, cost) = AStar.startAStar(graph, startPort, goalPort, mapOf(loadingPort.portId to 100), ship, 1000, subSetOfPorts)
@@ -99,7 +124,7 @@ fun main() {
 
     }
 
-    println("Number of port combinations: ${subSetOfPorts.toSet().combinations(3).size}")
+//    println("Number of port combinations: ${subSetOfPorts.toSet().combinations(3).size}")
 
 //    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingNode, 100, ship, 1000)
     val intermediateTime2 = System.currentTimeMillis()

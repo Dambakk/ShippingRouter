@@ -7,18 +7,19 @@ import ch.hsr.geohash.GeoHash
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import java.io.Serializable
 
 
 class Graph(
         val edges: List<GraphEdge>,
         val nodes: List<GraphNode>
-)
+): Serializable
 
 class GraphEdge (
         var fromNode: GraphNode,
         var toNode: GraphNode,
         val distance: Int
-)  {
+): Serializable  {
 
     fun createFlipped() = GraphEdge(toNode, fromNode, distance)
 
@@ -44,7 +45,7 @@ open class GraphNode (
         val name: String,
         val position: Position,
         val geohash: GeoHash = GeoHash.withBitPrecision(position.lat, position.lon, 64)
-): GeoJsonInterface {
+): GeoJsonInterface, Serializable {
 
     init {
         assert(position.lat in (-90.0..90.0) && position.lon in (-180.0..180.0)) {"Port position invalid: $position, $name"}

@@ -2,19 +2,20 @@ import Models.*
 import Utilities.*
 import com.marcinmoskala.math.combinations
 import me.tongfei.progressbar.ProgressBar
+import java.math.BigInteger
 
 data class NodeRecord(
         var node: GraphNode,
         var connection: GraphEdge?,
-        var costSoFar: Long,
+        var costSoFar: BigInteger,
         var timeSoFar: Long,
-        var estimatedTotalCost: Long
+        var estimatedTotalCost: BigInteger
 ) {
     constructor(node: GraphNode) : this(node = node,
             connection = null,
-            costSoFar = -1,
+            costSoFar = (-1).toBigInteger(),
             timeSoFar = -1,
-            estimatedTotalCost = -1)
+            estimatedTotalCost = (-1).toBigInteger())
 
     fun flipConnectionNodes(): NodeRecord {
         val tmp = connection?.fromNode
@@ -35,7 +36,7 @@ object AStar {
             ship: Ship,
             numTonnes: Int,
             subsetOfPorts: List<GraphPortNode>
-    ): Pair<List<GraphEdge>, Long> {
+    ): Pair<List<GraphEdge>, BigInteger> {
 
         assert(startNode != goalNode)
         assert(startNode in graph.nodes)
@@ -43,7 +44,7 @@ object AStar {
 
         val start = graph.getPortById(Config.startPortId)
 
-        val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, Long>>()
+        val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, BigInteger>>()
 
 
 
@@ -54,13 +55,13 @@ object AStar {
 //            Logger.log("Reached loading port.", LogType.DEBUG)
             val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true)!!
 
-            result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * pricePrTon))
+            result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * pricePrTon).toBigInteger())
 
         }
 
         val sortedResult = result
                 .toList()
-                .sortedByDescending<Pair<GraphNode, Pair<List<GraphEdge>, Long>>, Long> { it.second.second }
+                .sortedByDescending<Pair<GraphNode, Pair<List<GraphEdge>, BigInteger>>, BigInteger> { it.second.second }
                 .toMap()
 
 
@@ -103,8 +104,8 @@ object AStar {
         return Pair(minPath, minCost)
     }
 
-    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean, startTime: Long = 0L): Pair<MutableList<GraphEdge>, Long>? {
-        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0, timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toLong())
+    private fun Graph.performPathfindingBetweenPorts(startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean, startTime: Long = 0L): Pair<MutableList<GraphEdge>, BigInteger>? {
+        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0.toBigInteger(), timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toBigInteger())
 
         val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
         val pb = ProgressBar("From ${startNode.name} to ${goalNode.name}: ", totalDist)
@@ -115,7 +116,7 @@ object AStar {
         var currentNode: NodeRecord? = null
 
         while (openList.isNotEmpty()) {
-            openList.sortBy { it.estimatedTotalCost as Long? }
+            openList.sortBy { it.estimatedTotalCost as BigInteger? }
             currentNode = openList.getCheapestEstimatedNode()
 
             val estimatedDistToDest = currentNode.node.position.distanceFrom(goalNode.position).toLong()
@@ -131,7 +132,7 @@ object AStar {
             }
 
 //            val connections = getConnectionsForNode(currentNode)
-            val connections = getOutgoingConnectionsFromNodeRecord(currentNode)
+            val connections = getOutgoingConnectionsFromNodeRecord(currentNode, goalNode)
             for (connection in connections) {
 //                val endNode = if (connection.toNode == currentNode.node) connection.fromNode else connection.toNode // Undirected graph
                 val endNode = connection.toNode // Directed graph
@@ -139,10 +140,11 @@ object AStar {
 //                val endNodeCost = currentNode.costSoFar + connection.distance
 //                val endNodeCost = (currentNode.costSoFar + ship.calculateCost(connection, isLoaded)/1000.0).toInt()
                 val endNodeTime: Long = currentNode.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
-                val endNodeCost: Long = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
+                val endNodeCost: BigInteger = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
+//                Logger.log("EndNodeCost: $endNodeCost")
 
                 var endNodeRecord: NodeRecord?
-                var endNodeHeuristic: Long
+                var endNodeHeuristic: BigInteger
 
                 if (closedList.containsNode(endNode)) { // Does closed list contain node?
                     endNodeRecord = closedList.getNodeRecordOfNode(endNode)
@@ -154,7 +156,7 @@ object AStar {
                         closedList.remove(endNodeRecord)
                     }
 
-                    endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
+                    endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
 
                 } else if (openList.containsNode(endNode)) {
                     endNodeRecord = openList.getNodeRecordOfNode(endNode)
@@ -171,7 +173,7 @@ object AStar {
                     endNodeRecord = NodeRecord(endNode)
 //                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toInt() * operationCost // Todo: Perform estimate here...
 //                    endNodeHeuristic = ship.calculateHeuristic()
-                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toLong() // Todo: Perform estimate here...
+                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Todo: Perform estimate here...
 
                 }
 
@@ -244,9 +246,10 @@ fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
     }.toSet()
 }
 
-fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord): Set<GraphEdge> {
+fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord, goalNode: GraphNode): Set<GraphEdge> {
     return this.edges
             .filter { it.fromNode == node.node }
+            .filter { it.toNode == goalNode || it.toNode !is GraphPortNode }
             .toSet()
 }
 

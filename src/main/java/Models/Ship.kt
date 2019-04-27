@@ -2,6 +2,7 @@ package Models
 
 import CostFunctions.BaseCostFunction
 import CostFunctions.TimeWindowCostFunction
+import java.math.BigInteger
 
 data class Ship(
         val name: String,
@@ -25,12 +26,12 @@ data class Ship(
         return 0
     }
 
-    fun calculateCost(edge: GraphEdge, isLoaded: Boolean, currentTime: Long): Long {
+    fun calculateCost(edge: GraphEdge, isLoaded: Boolean, currentTime: Long): BigInteger {
         val operationCost = if (isLoaded) edge.distance * operatingCostLoaded else edge.distance * operatingCostEmpyt
-        return (operationCost + calculateCostForCostFunctions(edge) + calculateCostForTimeWindows(edge.toNode, currentTime))
+        return (operationCost + calculateCostForCostFunctions(edge) + calculateCostForTimeWindows(edge.toNode, currentTime)).toBigInteger()
     }
 
-    private fun calculateCostForCostFunctions(edge: GraphEdge): Int {
+    private fun calculateCostForCostFunctions(edge: GraphEdge): Long {
         return costFunctions
                 .map { it.getCost(edge) }
                 .sum()
