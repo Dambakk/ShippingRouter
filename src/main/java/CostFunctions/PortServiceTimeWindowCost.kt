@@ -8,7 +8,8 @@ import Utilities.Logger
 
 class PortServiceTimeWindowCost(override val weight: Float,
                                 private val port: GraphPortNode,
-                                private val timeWindow: LongRange) : TimeWindowCostFunction {
+                                private val timeWindow: LongRange
+) : TimeWindowCostFunction {
 
     override fun getCost(node: GraphNode, time: Long): Long {
         return if (node is GraphPortNode &&
@@ -21,4 +22,14 @@ class PortServiceTimeWindowCost(override val weight: Float,
         }
     }
 
+}
+
+class PortServiceTimeWindowHard(override val weight: Float,
+                                private val port: GraphPortNode,
+                                private val timeWindow: LongRange
+) : TimeWindowHardConstraint {
+    override fun isWithinTimeWindow(node: GraphNode, time: Long) =
+            (node is GraphPortNode &&
+                    node == port &&
+                    time <= timeWindow.endInclusive)
 }

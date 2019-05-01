@@ -28,6 +28,9 @@ data class NodeRecord(
 object AStar {
 
 
+    var openListHistory = mutableListOf<NodeRecord>()
+
+
     fun startAStar(
             graph: Graph,
             startNode: GraphNode,
@@ -38,7 +41,7 @@ object AStar {
             subsetOfPorts: List<GraphPortNode>
     ): Pair<List<GraphEdge>, BigInteger> {
 
-        assert(startNode != goalNode)
+//        assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
 
@@ -64,31 +67,73 @@ object AStar {
                 .sortedByDescending<Pair<GraphNode, Pair<List<GraphEdge>, BigInteger>>, BigInteger> { it.second.second }
                 .toMap()
 
-
-        val geoJsonElements = mutableListOf<String>()
         var thickness = 2
 
-        sortedResult.forEach { k, v ->
-            val color = getRandomColor()
-            val props = """
-                "marker-color": "$color",
-                "stroke":"$color",
-                "total-factir": ${v.second}
-            """.trimIndent()
-            val geoJsonElement = GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
-            val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
-            geoJsonElements.add(geoJsonElement)
-            geoJsonElements.add(portPoint)
-            thickness += 2
-        }
+        val geoJson = featureCollection {
+            point(startNode.position.lon, startNode.position.lat) {
+                "marker-color" value "#FF0000"
+            }
+            point(goalNode.position.lon, goalNode.position.lat) {
+                "marker-color" value "#00FF00"
+            }
+            sortedResult.forEach { (k, v) ->
+                val color = getRandomColor(k.name)
+                point(k.position.lon, k.position.lat) {
+                    "marker-color" value color
+                    "label" value k.name
+                }
+                lineString {
+                    v.first.forEach { add(coord lat it.fromNode.position.lat lng it.fromNode.position.lon) }
+                    "stroke" value color
+                    "stroke-width" value thickness
+                    "stroke-opacity" value 1
+                    "label" value k.name
+                    "cost" value v.second
+                }
+                thickness += 2
+            }
+        }.toGeoJson()
 
-        val startPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${start.position.lon}, ${start.position.lat}]")
-        val goalPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${goalNode.position.lon}, ${goalNode.position.lat}]")
-        geoJsonElements.add(startPin)
-        geoJsonElements.add(goalPin)
+        Logger.log("HERE IS GEOJSON WE'VE ALL BEEN WAITING FOR:")
+        println()
+        println(geoJson)
+        println()
 
-        val elements = geoJsonElements.joinToString(separator = ",")
-        val geoJson = GeoJson.getGeoJson(elements)
+        val openListMarkers = featureCollection {
+            openListHistory.forEach {
+                point(it.node.position.lon, it.node.position.lat)
+            }
+        }.toGeoJson()
+
+        Logger.log("Here is list of markers that has been in the open list:")
+        println()
+        println(openListMarkers)
+        println()
+
+
+//        val geoJsonElements = mutableListOf<String>()
+//
+//        sortedResult.forEach { k, v ->
+//            val color = getRandomColor()
+//            val props = """
+//                "marker-color": "$color",
+//                "stroke":"$color",
+//                "total-factor": ${v.second}
+//            """.trimIndent()
+//            val geoJsonElement = GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
+//            val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
+//            geoJsonElements.add(geoJsonElement)
+//            geoJsonElements.add(portPoint)
+//            thickness += 2
+//        }
+//
+//        val startPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${start.position.lon}, ${start.position.lat}]")
+//        val goalPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${goalNode.position.lon}, ${goalNode.position.lat}]")
+//        geoJsonElements.add(startPin)
+//        geoJsonElements.add(goalPin)
+//
+//        val elements = geoJsonElements.joinToString(separator = ",")
+//        val geoJson = GeoJson.getGeoJson(elements)
 
         Logger.log("GeoJson of cheapest path:")
         println(geoJson)
@@ -115,7 +160,7 @@ object AStar {
 
         var currentNode: NodeRecord? = null
 
-        while (openList.isNotEmpty()) {
+        loop@ while (openList.isNotEmpty()) {
             openList.sortBy { it.estimatedTotalCost as BigInteger? }
             currentNode = openList.getCheapestEstimatedNode()
 
@@ -139,7 +184,12 @@ object AStar {
 
 //                val endNodeCost = currentNode.costSoFar + connection.distance
 //                val endNodeCost = (currentNode.costSoFar + ship.calculateCost(connection, isLoaded)/1000.0).toInt()
-                val endNodeTime: Long = currentNode.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
+                val endNodeTime: Long = currentNode!!.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
+                val reachedAllTimeWindows = ship.isObeyingAllTimeWindows(connection.toNode, endNodeTime)
+                if (!reachedAllTimeWindows) {
+                    currentNode = null
+                    break@loop
+                }
                 val endNodeCost: BigInteger = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
 //                Logger.log("EndNodeCost: $endNodeCost")
 
@@ -184,13 +234,14 @@ object AStar {
 
                 if (!openList.containsNode(endNode)) {
                     openList.add(endNodeRecord)
+                    openListHistory.add(endNodeRecord)
                 }
 
             } // End of connections for loop
 
             // Current node is now handled. Move it to closed list.
             openList.remove(currentNode)
-            closedList.add(currentNode)
+            closedList.add(currentNode!!)
 
             if (currentNode.node == goalNode) {
                 println("Reached goal! ")
@@ -202,32 +253,38 @@ object AStar {
         pb.close()
 
 
-        assert(currentNode != null)
-        return if (currentNode!!.node != goalNode) {
-            // Did not find a path
-            Logger.log("Did not find path", LogType.WARNING)
-            null
-
-        } else {
-
-
-            //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
-
-            val totalCost = currentNode.costSoFar
-            //Did find a valid path
-            val path = mutableListOf<GraphEdge>()
-            while (currentNode!!.node != startNode) {
-                path.add(currentNode.connection!!)
-                closedList.remove(currentNode)
-                currentNode = closedList.find {
-                    (
-                            it.node == currentNode!!.connection!!.fromNode
-                                    ||
-                                    it.node == currentNode!!.connection!!.toNode)
-                }!!
+        return when {
+            currentNode == null -> {
+                Logger.log("Did not meet time requirements", LogType.WARNING)
+                null
             }
-            Logger.log("Did find a path")
-            Pair(path.asReversed(), totalCost)
+            currentNode.node != goalNode -> {
+                // Did not find a path
+                Logger.log("Did not find path", LogType.WARNING)
+                null
+
+            }
+            else -> {
+
+
+                //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
+
+                val totalCost = currentNode.costSoFar
+                //Did find a valid path
+                val path = mutableListOf<GraphEdge>()
+                while (currentNode!!.node != startNode) {
+                    path.add(currentNode.connection!!)
+                    closedList.remove(currentNode)
+                    currentNode = closedList.find {
+                        (
+                                it.node == currentNode!!.connection!!.fromNode
+                                        ||
+                                        it.node == currentNode!!.connection!!.toNode)
+                    }!!
+                }
+                Logger.log("Did find a path")
+                Pair(path.asReversed(), totalCost)
+            }
         }
     }
 
@@ -250,12 +307,6 @@ fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord, goalNode: Graph
     return this.edges
             .filter { it.fromNode == node.node }
             .filter { it.toNode == goalNode || it.toNode !is GraphPortNode }
-            .toSet()
-}
-
-fun Graph.getOutgoingConnectionsFromNode(node: GraphNode): Set<GraphEdge> {
-    return this.edges
-            .filter { it.fromNode == node }
             .toSet()
 }
 

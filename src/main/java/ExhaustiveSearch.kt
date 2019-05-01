@@ -21,7 +21,7 @@ object ExhaustiveSearch {
 
 
     fun performExhaustiveSearch(graph: Graph, startNode: GraphNode, goalNode: GraphNode, loadingPort: GraphNode, portPricePrTon: Int, ship: Ship, numTonnes: Int): Pair<List<GraphEdge>, Long> {
-        assert(startNode != goalNode)
+//        assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
 
@@ -43,7 +43,7 @@ object ExhaustiveSearch {
 
 
         // Start -> Loading port
-        val firstConnections = graph.getOutgoingConnectionsFromNode(startNode).toList()
+        val firstConnections = graph.getOutgoingConnectionsFromNode(startNode, loadingPort).toList()
         expandNodesRecursively(firstConnections, isLoaded = false, goalNode = loadingPort)
         this.progressBar.close()
         val (firstPath, firstCost) = getPathFromMap(prevBest, startNode, loadingPort)
@@ -67,7 +67,7 @@ object ExhaustiveSearch {
         edgesVisited = 0
 
         // Loading port -> Goal
-        val secondConnections = graph.getOutgoingConnectionsFromNode(loadingPort).toList()
+        val secondConnections = graph.getOutgoingConnectionsFromNode(loadingPort, goalNode).toList()
         expandNodesRecursively(secondConnections, isLoaded = true, goalNode = this.goalNode)
         this.progressBar.close()
         val (secondPath, secondCost) = getPathFromMap(prevBest, loadingPort, goalNode)
@@ -116,6 +116,11 @@ object ExhaustiveSearch {
             val prevNode = edge.fromNode
             val nextNode = edge.toNode
             val newTime = timeMap[prevNode.position]!! + ship.calculateTimeSpentOnEdge(edge)
+            val reachedTimeWindows = ship.isObeyingAllTimeWindows(nextNode, newTime)
+            if (!reachedTimeWindows) {
+                Logger.log("Did not reach time window for ${nextNode.name}")
+                continue@hey
+            }
             val cost = costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime)).toLong()
             val continuePath = saveCost(nextNode, prevNode, cost, newTime)
             if (!continuePath) {
@@ -123,7 +128,7 @@ object ExhaustiveSearch {
             } else if (nextNode == goalNode) {
                 continue@hey
             } else {
-                val connections = graph.getOutgoingConnectionsFromNode(nextNode).toMutableList()
+                val connections = graph.getOutgoingConnectionsFromNode(nextNode, goalNode).toMutableList()
                 connections.removeIf { it.fromNode == nextNode && it.toNode == edge.fromNode } //Remove where we came from
                 allNextConnections.addAll(connections)
             }
@@ -176,4 +181,12 @@ object ExhaustiveSearch {
     }
 
 
+}
+
+
+fun Graph.getOutgoingConnectionsFromNode(node: GraphNode, goalNode: GraphNode): Set<GraphEdge> {
+    return this.edges
+            .filter { it.fromNode == node }
+            .filter { it.toNode !is GraphPortNode || it.toNode == goalNode }
+            .toSet()
 }

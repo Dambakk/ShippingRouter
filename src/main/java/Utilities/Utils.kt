@@ -172,9 +172,16 @@ fun writeJsonToFile(geoJson: String) {
 }
 
 
-fun getRandomColor(): String {
-    val a = Random.nextInt(255).toString(16)
-    val b = Random.nextInt(255).toString(16)
-    val c = Random.nextInt(255).toString(16)
-    return "#$a$b$c"
-}
+fun getRandomColor(portId: String = "") =
+    when (portId) {
+        "Corpus Christi" -> "#de816f"
+        "Mesaieed" -> "#1f42d8"
+        "Rio Grande (Argentina)" -> "#68115d"
+        else -> {
+            val a = Random.nextInt(255).toString(16)
+            val b = Random.nextInt(255).toString(16)
+            val c = Random.nextInt(255).toString(16)
+            "#$a$b$c"
+        }
+    }
+

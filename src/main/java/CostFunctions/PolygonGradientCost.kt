@@ -23,7 +23,7 @@ class PolygonGradientCost(
     }
 
     override fun getCost(edge: GraphEdge): Long {
-        val dist = edge.fromNode.position.distanceFrom(edge.toNode.position)
+        val dist = edge.distance
         val lat = (edge.fromNode.position.lat + edge.fromNode.position.lat) / 2
         return (abs(lat) * dist / factor).toLong()
     }

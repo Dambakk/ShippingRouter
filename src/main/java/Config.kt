@@ -7,10 +7,11 @@ object Config {
     val startPortId = "CNXGA"
 //    val startPortId = "CNXGA"
 //    val goalPortId = "USWWO"
-    val goalPortId = "JPETA"
+//val goalPortId = "JPETA"
+    val goalPortId = "CNXGA"
 
+//    val loadingPortId = "CNTAX"
     val loadingPortId = "CNTAX"
-//    val loadingPortId = "ARRGA"
 
     val saveGeoJsonToFile = true
     val geoJsonFilePath = "output/geoJson/output4.json"

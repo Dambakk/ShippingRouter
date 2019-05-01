@@ -7,6 +7,20 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
+
+infix fun ClosedRange<Double>.step(step: Double): Iterable<Double> {
+    require(start.isFinite())
+    require(endInclusive.isFinite())
+    require(step > 0.0) { "Step must be positive, was: $step." }
+    val sequence = generateSequence(start) { previous ->
+        if (previous == Double.POSITIVE_INFINITY) return@generateSequence null
+        val next = previous + step
+        if (next > endInclusive) null else next
+    }
+    return sequence.asIterable()
+}
+
+
 object GraphUtils {
 
 
@@ -14,6 +28,7 @@ object GraphUtils {
         assert(initialPrecision in 0..100) { "Invalid precision" }
 
         val step = 1 // Can be 1
+//        val step = 0.5 // Can be 1
 
         val nodes = mutableListOf<GraphNode>()
         var connections = mutableListOf<GraphEdge>()
@@ -77,8 +92,10 @@ object GraphUtils {
 
         var counter = 0
         portPoints.forEach { port ->
-            val portLat = (((port.position.lat.toInt()) / step) * step).toInt() // Round off to match graph grid
-            val portLon = (((port.position.lon.toInt()) / step) * step).toInt() // Round off to match graph grid
+            val portLat = (((port.position.lat.toInt()) / step) * step)
+//            val portLat = (((port.position.lat.toInt()) / step) * step).toInt() // Round off to match graph grid
+//            val portLon = (((port.position.lon.toInt()) / step) * step).toInt() // Round off to match graph grid
+            val portLon = (((port.position.lon.toInt()) / step) * step)
 
             assert(portLat % step == 0 && portLon % step == 0) { "Port position is not part of graph grid" }
             nodesMap[Pair(portLat, portLon)]?.run {
@@ -88,6 +105,7 @@ object GraphUtils {
 
             // TODO: Change to only 1?
             for (t in 1..2) {
+//            for (t in 1..1) {
 
                 nodesMap[Pair(portLat - step * t, portLon)]?.run {
                     val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
@@ -225,7 +243,7 @@ object GraphUtils {
 
                 val newCs = neighbours.map { n ->
                     val t = if (n.fromNode == it) n.toNode else n.fromNode
-                    Models.GraphEdge(it, t, it.position.distanceFrom(t.position).toInt())
+                    GraphEdge(it, t, it.position.distanceFrom(t.position).toInt())
                 }
                 connections.addAll(newCs)
             }

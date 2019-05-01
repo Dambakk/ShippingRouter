@@ -19,11 +19,16 @@ interface BasePolygonCostFunction : BaseCostFunction {
 }
 
 
-interface TimeWindowCostFunction {
-
+interface TimeWindowConstraint {
     val weight: Float
+}
 
+interface TimeWindowCostFunction : TimeWindowConstraint{
     fun getCost(node: GraphNode, time: Long): Long
+}
+
+interface TimeWindowHardConstraint: TimeWindowConstraint {
+    fun isWithinTimeWindow(node: GraphNode, time: Long): Boolean
 }
 
 

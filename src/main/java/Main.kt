@@ -1,7 +1,4 @@
-import CostFunctions.PolygonAngledCost
-import CostFunctions.PolygonCost
-import CostFunctions.PolygonGradientCost
-import CostFunctions.PortServiceTimeWindowCost
+import CostFunctions.*
 import Models.*
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -62,7 +59,7 @@ fun main() {
     //endregion
 
     val createNewGraph = false
-    val graphFile = "graph"
+    val graphFile = "graph-0.5.graph"
 
     val graph = if (createNewGraph) {
         val g = GraphUtils.createLatLonGraph(portPoints, 100,  worldCountries)
@@ -87,25 +84,25 @@ fun main() {
     val startNode = graph.getPortById(Config.startPortId)
     val loadingNode = graph.getPortById(Config.loadingPortId)
     val goalNode = graph.getPortById(Config.goalPortId)
-
-    val ship = Ship("Test ship 1", 1000, 5, 100).apply {
-        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/suez-polygon.geojson"))
-        addCostFunction(PolygonCost(1.0f, 100, "assets/constraints/panama-polygon.geojson"))
-        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
-//        addCostFunction(PolygonCost(1f, 1000,"assets/constraints/taiwan-strait.geojson"))
-//        addCostFunction(PolygonAngledCost(
-//                1f, "assets/constraints/taiwan-strait.geojson",
-//                100000, 225.0, 90.0))
-        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
-//        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
-//            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
-    }
-
-//    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100, "QAMES" to 2000, "JPETA" to 500, "USCRP" to 10000)
+//    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 1000, "QAMES" to 100, "USCRP" to 2000)
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("CNTAX" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("USCRP" to 100)
+
+    val ship = Ship("Test ship 1", 1000, 25, 250).apply {
+//        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/suez-polygon.geojson"))
+//        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/panama-polygon.geojson"))
+//        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
+        addCostFunction(PolygonAngledCost(1f, "assets/constraints/taiwan-strait.geojson",100000, 225.0, 90.0))
+//        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
+
+//        addCostFunction(PolygonCost(1f, 1000,"assets/constraints/taiwan-strait.geojson"))
+//        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
+//            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
+    }
+
+
 
     val intermediateTime1 = System.currentTimeMillis()
 
@@ -129,7 +126,8 @@ fun main() {
 //    val (pathBruteForce, costBruteForce) = ExhaustiveSearch.performExhaustiveSearch(graph, startNode, goalNode, loadingNode, 100, ship, 1000)
     val intermediateTime2 = System.currentTimeMillis()
 //    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000, subSetOfPorts)
-    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, mapOf(loadingNode.portId to 100), ship, 1000, subSetOfPorts)
+    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, mapOf(loadingNode.portId to 0), ship, 1000, subSetOfPorts)
+//    val (path, cost) = AStar.startAStar(graph, startNode, goalNode, possibleLoadingPortsWithPortPrice, ship, 1000, subSetOfPorts)
     println("Path: $path")
 
     val endTime = System.currentTimeMillis()

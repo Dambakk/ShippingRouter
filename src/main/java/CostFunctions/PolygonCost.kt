@@ -3,13 +3,10 @@ package CostFunctions
 import Models.GraphEdge
 import Models.GraphNode
 import Utilities.GeoJson
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
-import java.math.BigInteger
 
 
-class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: String) : BasePolygonCostFunction {
+class PolygonCost(override var weight: Float, val cost: Long, geoJsonFilePath: String) : BasePolygonCostFunction {
 
     override val polygon: Polygon
 
@@ -30,9 +27,9 @@ class PolygonCost(override var weight: Float, val cost: Int, geoJsonFilePath: St
     override fun getCost(edge: GraphEdge): Long {
         //TODO: Hente bare fra fromNode
         val a = getNodeCost(edge.fromNode)
-        val b = getNodeCost(edge.toNode)
+//        val b = getNodeCost(edge.toNode)
 
-        return (a + b).toLong()
+        return a //+ b
     }
 
 }
