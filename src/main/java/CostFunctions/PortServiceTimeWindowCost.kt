@@ -28,8 +28,18 @@ class PortServiceTimeWindowHard(override val weight: Float,
                                 private val port: GraphPortNode,
                                 private val timeWindow: LongRange
 ) : TimeWindowHardConstraint {
-    override fun isWithinTimeWindow(node: GraphNode, time: Long) =
-            (node is GraphPortNode &&
-                    node == port &&
-                    time <= timeWindow.endInclusive)
+
+    override fun isWithinTimeWindow(node: GraphNode, time: Long): Boolean {
+        return when(node) {
+            is GraphPortNode -> {
+                if (port.portId == node.portId) {
+//                    time <= timeWindow.endInclusive
+                    time in timeWindow
+                } else {
+                    true
+                }
+            }
+            else -> true
+        }
+    }
 }

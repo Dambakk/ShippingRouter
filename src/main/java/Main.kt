@@ -96,6 +96,7 @@ fun main() {
 //        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
         addCostFunction(PolygonAngledCost(1f, "assets/constraints/taiwan-strait.geojson",100000, 225.0, 90.0))
 //        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("ARRGA"), 0L..10_000_000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("CNTAX"), 100L..300L))
 
 //        addCostFunction(PolygonCost(1f, 1000,"assets/constraints/taiwan-strait.geojson"))
 //        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))

@@ -1,6 +1,5 @@
 import Models.*
 import Utilities.*
-import com.marcinmoskala.math.combinations
 import me.tongfei.progressbar.ProgressBar
 import java.math.BigInteger
 
@@ -94,7 +93,7 @@ object AStar {
             }
         }.toGeoJson()
 
-        Logger.log("HERE IS GEOJSON WE'VE ALL BEEN WAITING FOR:")
+        Logger.log("HERE IS GEOJSON WE'VE ALL BEEN WAITING FOR:", LogType.SUCCESS)
         println()
         println(geoJson)
         println()
@@ -159,6 +158,7 @@ object AStar {
         val closedList = mutableListOf<NodeRecord>()
 
         var currentNode: NodeRecord? = null
+        var currentTime = 0L
 
         loop@ while (openList.isNotEmpty()) {
             openList.sortBy { it.estimatedTotalCost as BigInteger? }
@@ -187,6 +187,7 @@ object AStar {
                 val endNodeTime: Long = currentNode!!.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
                 val reachedAllTimeWindows = ship.isObeyingAllTimeWindows(connection.toNode, endNodeTime)
                 if (!reachedAllTimeWindows) {
+                    Logger.log("Breaking loop because we did not meet time window at $endNodeTime for node ${connection.toNode.name}", LogType.ERROR)
                     currentNode = null
                     break@loop
                 }
@@ -227,6 +228,7 @@ object AStar {
 
                 }
 
+                currentTime = endNodeTime
                 endNodeRecord.costSoFar = endNodeCost
                 endNodeRecord.timeSoFar = endNodeTime
                 endNodeRecord.connection = connection
@@ -252,15 +254,21 @@ object AStar {
 
         pb.close()
 
+        if (currentNode != null) {
+            Logger.log("Reached ${currentNode.node.name} at time $currentTime")
+        } else {
+            Logger.log("Did not reach time window? Anyways, current time is $currentTime", LogType.ERROR)
+        }
+
 
         return when {
             currentNode == null -> {
-                Logger.log("Did not meet time requirements", LogType.WARNING)
+                Logger.log("Did not meet time requirements", LogType.ERROR)
                 null
             }
             currentNode.node != goalNode -> {
                 // Did not find a path
-                Logger.log("Did not find path", LogType.WARNING)
+                Logger.log("Did not find path", LogType.ERROR)
                 null
 
             }

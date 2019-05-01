@@ -34,7 +34,9 @@ data class Ship(
     }
 
     fun isObeyingAllTimeWindows(node: GraphNode, time: Long) =
-            !timeWindowConstraints.map { it.isWithinTimeWindow(node, time) }.any{ !it }
+            !timeWindowConstraints
+                    .map { it.isWithinTimeWindow(node, time) }
+                    .any{ !it }
 
     fun calculateCost(edge: GraphEdge, isLoaded: Boolean, currentTime: Long): BigInteger {
         val operationCost = if (isLoaded) edge.distance * operatingCostLoaded else edge.distance * operatingCostEmpyt
