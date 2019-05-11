@@ -10,7 +10,7 @@ import kotlin.math.absoluteValue
 
 
 /**
- * targetAngle: Double is the angle in which will gain the highest cost. The angle is defined in range 0..360 where
+ * targetAngle: Double is the angle in which will gain the highest aStarCost. The angle is defined in range 0..360 where
  * East = 0
  * South = 90
  * West = 180

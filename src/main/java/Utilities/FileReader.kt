@@ -12,11 +12,11 @@ interface ShippingObject
 object FileHandler {
 
     /*
-    inline fun <reified T>fileParser(path: String, delimiter: String, containsHeader: Boolean = true, type: Class<Utilities.ShippingObject>): List<Any> {
+    inline fun <reified T>fileParser(aStarPath: String, delimiter: String, containsHeader: Boolean = true, type: Class<Utilities.ShippingObject>): List<Any> {
         val list = mutableListOf<T>()
 
         try {
-            val fileReader = BufferedReader(FileReader(path))
+            val fileReader = BufferedReader(FileReader(aStarPath))
             if (containsHeader) {
                 val headers = fileReader.readLine()
             }
@@ -30,11 +30,11 @@ object FileHandler {
             }
 
         } catch (e: Exception) {
-            println("Error parsing $path")
+            println("Error parsing $aStarPath")
             println(e)
         }
 
-        println("Found ${list.size} items in $path")
+        println("Found ${list.size} items in $aStarPath")
         return list
     }
 
