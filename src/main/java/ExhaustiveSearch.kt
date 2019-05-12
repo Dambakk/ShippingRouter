@@ -71,7 +71,7 @@ object ExhaustiveSearch {
      */
 
 
-    suspend fun performExhaustiveSearch(c: RunConfiguration) =
+    fun performExhaustiveSearch(c: RunConfiguration) =
             performExhaustiveSearch(c.graph, c.startNode, c.goalNode, c.loadingPort, c.portPricePrTon, c.ship, c.numTonnes)
 
     fun performExhaustiveSearch(graph: Graph,
