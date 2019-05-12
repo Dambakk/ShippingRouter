@@ -24,7 +24,7 @@ data class NodeRecord(
     }
 }
 
-class AStar {
+object AStar {
 
 
     var openListHistory = mutableListOf<NodeRecord>()
@@ -63,7 +63,7 @@ class AStar {
      */
 
 
-    fun startAStar(c: RunConfiguration) =
+    suspend fun startAStar(c: RunConfiguration) =
             startAStar(c.graph, c.startNode, c.goalNode, mapOf((c.loadingPort as GraphPortNode).portId to c.portPricePrTon), c.ship, c.numTonnes, emptyList())
 
 

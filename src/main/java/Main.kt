@@ -7,10 +7,15 @@ import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.marcinmoskala.math.combinations
 import com.marcinmoskala.math.permutations
+import javafx.application.Application.launch
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import java.io.*
 import java.math.BigInteger
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.contracts.contract
 
 typealias Path = List<GraphEdge>
 typealias Cost = BigInteger
@@ -64,13 +69,15 @@ fun main() {
 
 
     val graph = getNewGraph(portPoints)
+    Logger.log("Graph loaded/created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
 
 
-    Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
+    val alreadyTestedCombinations = readResultsFile("output/big-run-01/simulationResult.csv")
 
-    val startNode = graph.getPortById(Config.startPortId)
-    val loadingNode = graph.getPortById(Config.loadingPortId)
-    val goalNode = graph.getPortById(Config.goalPortId)
+
+//    val startNode = graph.getPortById(Config.startPortId)
+//    val loadingNode = graph.getPortById(Config.loadingPortId)
+//    val goalNode = graph.getPortById(Config.goalPortId)
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 1000, "QAMES" to 100, "USCRP" to 2000)
 //    val possibleLoadingPortsWithPortPrice = mapOf("ARRGA" to 100)
 //    val possibleLoadingPortsWithPortPrice = mapOf("QAMES" to 100)
@@ -125,7 +132,6 @@ fun main() {
     )
 
 
-
     /*
     val configTest = RunConfiguration(
             graph = graph,
@@ -173,83 +179,82 @@ fun main() {
     val numCombinations = subSetOfPorts.toSet().combinations(3).size * 6 //times 6 because of all permutations of 3 ports
     var counter = 0
     subSetOfPorts.toSet().combinations(3).forEach { ports ->
-        ports.permutations().forEach {
 
-            val startPort = it[0]
-            val loadingPort = it[1]
-            val goalPort = it[2]
-            val numTonnes = 1000
+        //Todo: Launch suspending functions here?
 
-            println("")
-            Logger.log("Evaluating combination #${++counter}/$numCombinations...")
-            Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
-
-            val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
-
-//            val freshGraph = getNewGraph(portPoints)
-
-            val runConfig = RunConfiguration(
-                    graph,
-                    startPort,
-                    loadingPort,
-                    goalPort,
-                    loadingPortPrice,
-                    ship,
-                    numTonnes
-            )
-
-//            val configTest = RunConfiguration(
-//                    graph = graph,
-//                    startNode = graph.getPortById("CNXGA"),
-//                    loadingPort = graph.getPortById("CNTAX"),
-//                    goalNode = graph.getPortById("ARRGA"),
-//                    portPricePrTon = 0,
-//                    ship = ship,
-//                    numTonnes = 0
-//            )
-
-            val startTime = System.currentTimeMillis()
-
-//            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
-//                    ?: Pair(emptyList(), (-1L).toBigInteger())
-            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch().performExhaustiveSearch(runConfig)
-                    ?: Pair(emptyList(), (-1L).toBigInteger())
-
-            val middleTime = System.currentTimeMillis()
-
-//            val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
-            val (aStarPath, aStarCost) = AStar().startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
-
-            val endTime = System.currentTimeMillis()
+        GlobalScope.launch {
 
 
-            //Calculate meta:
-            val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
-            val AStarDuration = (endTime - middleTime) / 1000 // seconds
-            val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
-                "Both Exhaustive search and A* failed"
-            } else if (exhaustivePath.isEmpty()) {
-                "Exhaustive result failed"
-            } else if (aStarPath.isEmpty()) {
-                "A* result failed"
-            } else {
-                "OK"
+            hey@ for (it in ports.permutations()) {
+
+                Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+
+                val startPort = it[0]
+                val loadingPort = it[1]
+                val goalPort = it[2]
+                val numTonnes = 1000
+
+                if ("${startPort.portId}-${loadingPort.portId}-${goalPort.portId}" in alreadyTestedCombinations) {
+                    Logger.log("Combination of ports is already tested. Skipping...", LogType.WARNING)
+                    continue@hey
+                }
+
+                Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
+
+                val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
+
+                val runConfig = RunConfiguration(
+                        graph,
+                        startPort,
+                        loadingPort,
+                        goalPort,
+                        loadingPortPrice,
+                        ship,
+                        numTonnes
+                )
+
+                val startTime = System.currentTimeMillis()
+
+                val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
+                        ?: Pair(emptyList(), (-1L).toBigInteger())
+
+                val middleTime = System.currentTimeMillis()
+
+                val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+
+                val endTime = System.currentTimeMillis()
+
+
+                //Calculate meta:
+                val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
+                val AStarDuration = (endTime - middleTime) / 1000 // seconds
+                val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
+                    "Both Exhaustive search and A* failed"
+                } else if (exhaustivePath.isEmpty()) {
+                    "Exhaustive result failed"
+                } else if (aStarPath.isEmpty()) {
+                    "A* result failed"
+                } else {
+                    "OK"
+                }
+
+
+                resultRecords.add(SimulationRecord(
+                        startPort,
+                        loadingPort,
+                        goalPort,
+                        aStarPath,
+                        aStarCost,
+                        AStarDuration,
+                        exhaustivePath,
+                        exhaustiveCost,
+                        exhaustiveDuration,
+                        infoMsg
+                ))
             }
 
-
-            resultRecords.add(SimulationRecord(
-                    startPort,
-                    loadingPort,
-                    goalPort,
-                    aStarPath,
-                    aStarCost,
-                    AStarDuration,
-                    exhaustivePath,
-                    exhaustiveCost,
-                    exhaustiveDuration,
-                    infoMsg
-            ))
         }
+
 
     }
 
@@ -373,6 +378,7 @@ data class SimulationRecord(
         val exhaustiveDuration: Long,
         val infoMsg: String = ""
 ) {
+
     override fun toString() =
             """
                 ----------------------------
@@ -426,4 +432,28 @@ fun getNewGraph(portPoints: List<GraphPortNode>) = if (Config.createNewGraph) {
         Logger.log("Graph read from file")
     }
     g!!
+}
+
+
+fun readResultsFile(path: String): List<String> {
+    val records = mutableListOf<String>()
+
+    try {
+        val fileReader = BufferedReader(FileReader(path))
+        val headers = fileReader.readLine()
+        var line = fileReader.readLine()
+        while (line != null) {
+            val params = line.split(",")
+            val item = "${params[0]}-${params[1]}-${params[2]}"
+            records.add(item)
+            line = fileReader.readLine()
+        }
+
+    } catch (e: Exception) {
+        println("Error parsing trade pattern file")
+        println(e)
+    }
+
+    println("Found ${records.size} trade patterns")
+    return records
 }

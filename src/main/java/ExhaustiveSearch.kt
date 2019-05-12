@@ -5,7 +5,7 @@ import Utilities.Logger
 import me.tongfei.progressbar.ProgressBar
 import java.math.BigInteger
 
-class ExhaustiveSearch {
+object ExhaustiveSearch {
 
 
     /*
@@ -71,7 +71,7 @@ class ExhaustiveSearch {
      */
 
 
-    fun performExhaustiveSearch(c: RunConfiguration) =
+    suspend fun performExhaustiveSearch(c: RunConfiguration) =
             performExhaustiveSearch(c.graph, c.startNode, c.goalNode, c.loadingPort, c.portPricePrTon, c.ship, c.numTonnes)
 
     fun performExhaustiveSearch(graph: Graph,
