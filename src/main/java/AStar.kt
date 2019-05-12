@@ -24,10 +24,12 @@ data class NodeRecord(
     }
 }
 
-object AStar {
+class AStar {
 
 
     var openListHistory = mutableListOf<NodeRecord>()
+
+    /*
 
     fun startSimpleAStar(c: RunConfiguration): Pair<Path, Cost>? =
             startSimpleAStar(c.graph, c.startNode, c.loadingPort, c.goalNode, c.portPricePrTon, c.ship, c.numTonnes)
@@ -58,6 +60,8 @@ object AStar {
         return null
     }
 
+     */
+
 
     fun startAStar(c: RunConfiguration) =
             startAStar(c.graph, c.startNode, c.goalNode, mapOf((c.loadingPort as GraphPortNode).portId to c.portPricePrTon), c.ship, c.numTonnes, emptyList())
@@ -86,15 +90,17 @@ object AStar {
         possibleLoadingPortsWithPrices.forEach { (portId, pricePrTon) ->
             val loadingPort = graph.getPortById(portId)
             Logger.log("Evaluating for loading port: $loadingPort.")
-            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false) ?: run {
-                Logger.log("Could not find first A-star path", LogType.WARNING)
-                return null
-            }
+            val (path1, cost1) = graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false, progressBarMsg = "A* (part 1):")
+                    ?: run {
+                        Logger.log("Could not find first A-star path", LogType.WARNING)
+                        return null
+                    }
 //            Logger.log("Reached loading port.", LogType.DEBUG)
-            val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true) ?: run {
-                Logger.log("Could not second first A-star path", LogType.WARNING)
-                return null
-            }
+            val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true, progressBarMsg = "A* (part 2):")
+                    ?: run {
+                        Logger.log("Could not second first A-star path", LogType.WARNING)
+                        return null
+                    }
 
             result[loadingPort] = Pair((path1 + path2.asIterable()), cost1 + cost2 + (numTonnes * pricePrTon).toBigInteger())
 
@@ -192,12 +198,13 @@ object AStar {
             goalNode: GraphNode,
             ship: Ship,
             isLoaded: Boolean,
-            startTime: Long = 0L
+            startTime: Long = 0L,
+            progressBarMsg: String = ""
     ): Pair<Path, Cost>? {
         val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0.toBigInteger(), timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toBigInteger())
 
         val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
-        val pb = ProgressBar("From ${startNode.name} to ${goalNode.name}: ", totalDist)
+        val pb = ProgressBar(progressBarMsg, totalDist)
 
         val openList = mutableListOf(startRecord)
         val closedList = mutableListOf<NodeRecord>()
@@ -215,8 +222,9 @@ object AStar {
 
 
             if (currentNode.node == goalNode) {
-                Logger.log("Reached goal", LogType.DEBUG)
-                closedList.add(currentNode.flipConnectionNodes())
+//                Logger.log("Reached goal! (1)", LogType.DEBUG)
+//                closedList.add(currentNode.flipConnectionNodes())
+                closedList.add(currentNode)
                 break
             }
 
@@ -245,6 +253,7 @@ object AStar {
                         closedList.remove(endNodeRecord)
                     }
 
+                    //TODO: Try to calculate the heuristic traditionally.
                     endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
 
                 } else if (openList.containsNode(endNode)) {
@@ -254,11 +263,13 @@ object AStar {
                         continue
                     }
 
+                    //TODO: Try to calculate the heuristic traditionally.
                     endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
 
                 } else { //Unvisited (new) node
                     endNodeRecord = NodeRecord(endNode)
-                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Euclidean distance
+//                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
+                    endNodeHeuristic = 0.toBigInteger()
                 }
 
                 currentTime = endNodeTime
@@ -279,7 +290,7 @@ object AStar {
             closedList.add(currentNode!!)
 
             if (currentNode.node == goalNode) {
-                println("Reached goal! ")
+                Logger.log("Reached goal! (2) ", LogType.DEBUG)
                 break
             }
 
@@ -287,42 +298,43 @@ object AStar {
 
         pb.close()
 
-        if (currentNode != null) {
-            Logger.log("Reached ${currentNode.node.name} at time $currentTime")
-        } else {
-            Logger.log("Did not reach time window? Anyways, current time is $currentTime", LogType.ERROR)
-        }
+//        if (currentNode != null) {
+//            Logger.log("Reached ${currentNode.node.name} at time $currentTime")
+//        } else {
+//            Logger.log("Did not reach time window? Anyways, current time is $currentTime", LogType.ERROR)
+//        }
 
 
-        return when {
-            currentNode == null -> {
+        return when (currentNode) {
+            null -> {
                 Logger.log("Did not meet time requirements", LogType.ERROR)
                 null
             }
-            currentNode.node != goalNode -> {
-                // Did not find a aStarPath
-                Logger.log("Did not find aStarPath", LogType.ERROR)
-                null
-
-            }
             else -> {
-                //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
+                if (currentNode.node != goalNode) {
+                    Logger.log("Did not find aStarPath", LogType.ERROR)
+                    Logger.log("Current node for A* is this: $currentNode", LogType.WARNING)
+                    null
+                } else {
 
-                val totalCost = currentNode.costSoFar
-                //Did find a valid aStarPath
-                val path = mutableListOf<GraphEdge>()
-                while (currentNode!!.node != startNode) {
-                    path.add(currentNode.connection!!)
-                    closedList.remove(currentNode)
-                    currentNode = closedList.find {
-                        (
-                                it.node == currentNode!!.connection!!.fromNode
-                                        ||
-                                        it.node == currentNode!!.connection!!.toNode)
-                    }!!
+                    //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
+
+                    val totalCost = currentNode.costSoFar
+                    //Did find a valid aStarPath
+                    val path = mutableListOf<GraphEdge>()
+                    while (currentNode!!.node != startNode) {
+                        path.add(currentNode.connection!!)
+                        closedList.remove(currentNode)
+                        currentNode = closedList.find {
+                            (
+                                    it.node == currentNode!!.connection!!.fromNode
+                                            ||
+                                            it.node == currentNode!!.connection!!.toNode)
+                        }!!
+                    }
+                    Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
+                    Pair(path.asReversed(), totalCost)
                 }
-                Logger.log("Did find a aStarPath", LogType.DEBUG)
-                Pair(path.asReversed(), totalCost)
             }
         }
     }
@@ -342,10 +354,17 @@ fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
     }.toSet()
 }
 
-fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord, goalNode: GraphNode): Set<GraphEdge> {
+
+fun Graph.getOutgoingConnectionsFromNodeRecordNoPortsExceptGoal(node: NodeRecord, goalNode: GraphNode): Set<GraphEdge> {
     return this.edges
             .filter { it.fromNode == node.node }
             .filter { it.toNode == goalNode || it.toNode !is GraphPortNode }
+            .toSet()
+}
+
+fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord, goalNode: GraphNode): Set<GraphEdge> {
+    return this.edges
+            .filter { it.fromNode == node.node }
             .toSet()
 }
 

@@ -1,10 +1,12 @@
-import CostFunctions.*
+import CostFunctions.PolygonAngledCost
+import CostFunctions.PolygonCost
+import CostFunctions.PolygonGradientCost
+import CostFunctions.PortServiceTimeWindowHard
 import Models.*
 import Utilities.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.marcinmoskala.math.combinations
 import com.marcinmoskala.math.permutations
-import scala.reflect.io.Directory
 import java.io.*
 import java.math.BigInteger
 import java.time.LocalDateTime
@@ -16,13 +18,8 @@ typealias Cost = BigInteger
 
 fun main() {
 
-    val test = testGeoJsonCreator()
-    val json = ObjectMapper().writeValueAsString(test)
-    println(json)
+    val globalStartTime = System.currentTimeMillis()
 
-    val startTime = System.currentTimeMillis()
-
-    val worldCountries = GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
 
     val portPoints = FileHandler.readPortsFile()
             .filter { !it.deleted }
@@ -35,8 +32,8 @@ fun main() {
             }
             .also { println("Number of ports: ${it.size}") }
 
-    val subSetOfPortsMini = portPoints
-            .filter { it.portId in Config.portIdsOfInterestMicro }
+    val subSetOfPorts = portPoints
+            .filter { it.portId in Config.portIdsOfInterest }
             .also { println("Number of ports (mini): ${it.size}") }
 
 //region old
@@ -65,25 +62,8 @@ fun main() {
 //
     //endregion
 
-    val createNewGraph = false
-    val graphFile = "graph-0.5.graph"
 
-    val graph = if (createNewGraph) {
-        val g = GraphUtils.createLatLonGraph(portPoints, 100, worldCountries)
-//    GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
-        ObjectOutputStream(FileOutputStream(graphFile)).use {
-            it.writeObject(g)
-            Logger.log("Graph written to file")
-        }
-        g
-    } else {
-        var g: Graph? = null
-        ObjectInputStream(FileInputStream(graphFile)).use {
-            g = it.readObject() as Graph
-            Logger.log("Graph read from file")
-        }
-        g!!
-    }
+    val graph = getNewGraph(portPoints)
 
 
     Logger.log("Graph created! (Nodes: ${graph.nodes.size}, edges: ${graph.edges.size})")
@@ -98,11 +78,18 @@ fun main() {
 //    val possibleLoadingPortsWithPortPrice = mapOf("USCRP" to 100)
 
     val ship = Ship("Test ship 1", 1000, 25, 250).apply {
-        //        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/suez-polygon.geojson"))
-//        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/panama-polygon.geojson"))
-//        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
-//        addCostFunction(PolygonAngledCost(1f, "assets/constraints/taiwan-strait.geojson", 100000, 225.0, 90.0))
-//        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("ARRGA"), 0L..100_000L))
+        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/suez-polygon.geojson"))
+        addCostFunction(PolygonCost(1.0f, 10_000, "assets/constraints/panama-polygon.geojson"))
+        addCostFunction(PolygonGradientCost(1.0f, 1, "assets/constraints/antarctica.geojson"))
+        addCostFunction(PolygonAngledCost(1f, "assets/constraints/taiwan-strait.geojson", 100000, 225.0, 90.0))
+        addCostFunction(PolygonAngledCost(1f, "assets/constraints/gulf-stream.geojson", 100, 45.0, 90.0)) //TODO: Verify this one
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("AUBUY"), 0L..100_000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("CNXGA"), 0L..10_000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("PHMNL"), 0L..5_000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("ARRGA"), 0L..10_000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("USCRP"), 0L..7000L))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("QAMES"), 0L..4_500))
+        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("JPETA"), 0L..5_000L))
 //        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("CNTAX"), 0L..90_000L))
 //        addTimeWindowConstraint(PortServiceTimeWindowHard(1.0f, graph.getPortById("JPETA"), 1_000L..650_000L))
 
@@ -110,7 +97,6 @@ fun main() {
 //        addTimeWindow(PortServiceTimeWindowCost(1.0f, graph.getPortById("CNTAX"), 200_000L..220_000L))
 //            .addCostFunction(PolygonCost(1.0f, 2100000000, "assets/constraints/test.geojson"))
     }
-
 
     val portPrices = mapOf<String, Int>(
             "ARRGA" to 1000,
@@ -139,86 +125,135 @@ fun main() {
     )
 
 
-//    val intermediateTime1 = System.currentTimeMillis()
 
+    /*
+    val configTest = RunConfiguration(
+            graph = graph,
+            startNode = graph.getPortById("PHMNL"),
+            loadingPort = graph.getPortById("CNXGA"),
+            goalNode = graph.getPortById("AUBUY"),
+            portPricePrTon = 0,
+            ship = ship,
+            numTonnes = 0
+    )
+
+    val startTime = System.currentTimeMillis()
+
+//            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
+//                    ?: Pair(emptyList(), (-1L).toBigInteger())
+    val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch().performExhaustiveSearch(configTest)
+            ?: Pair(emptyList(), (-1L).toBigInteger())
+
+    val middleTime = System.currentTimeMillis()
+
+//            val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+    val (aStarPath, aStarCost) = AStar().startAStar(configTest) ?: Pair(emptyList(), (-1L).toBigInteger())
+
+    println(SimulationRecord(
+            configTest.startNode as GraphPortNode,
+            configTest.loadingPort as GraphPortNode,
+            configTest.goalNode as GraphPortNode,
+            aStarPath,
+            aStarCost,
+            0L,
+            exhaustivePath,
+            exhaustiveCost,
+            0L,
+            ""
+    ))
+
+     */
+
+
+    println()
+    println()
+    println()
 
     val resultRecords = mutableListOf<SimulationRecord>()
-    val numCombinations = subSetOfPortsMini.toSet().combinations(3).size
+    val numCombinations = subSetOfPorts.toSet().combinations(3).size * 6 //times 6 because of all permutations of 3 ports
     var counter = 0
-    subSetOfPortsMini.toSet().combinations(3).forEach { ports ->
-        val p = ports.toList()
-        val startPort = p[0]
-        val loadingPort = p[1]
-        val goalPort = p[2]
-        val numTonnes = 1000
+    subSetOfPorts.toSet().combinations(3).forEach { ports ->
+        ports.permutations().forEach {
 
-        Logger.log("Evaluating combination #${++counter}/$numCombinations...")
-        Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}", LogType.DEBUG)
+            val startPort = it[0]
+            val loadingPort = it[1]
+            val goalPort = it[2]
+            val numTonnes = 1000
 
-        val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
+            println("")
+            Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+            Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
 
-        val runConfig = RunConfiguration(
-                graph,
-                startPort,
-                loadingPort,
-                goalPort,
-                loadingPortPrice,
-                ship,
-                numTonnes
-        )
+            val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
 
-//        val configTest = RunConfiguration(
-//            graph = graph,
-//            startNode = graph.getPortById("CNXGA"),
-//            loadingPort = graph.getPortById("CNTAX"),
-//            goalNode = graph.getPortById("CNXGA"),
-//            portPricePrTon = 0,
-//            ship = ship,
-//            numTonnes = 0
-//    )
+//            val freshGraph = getNewGraph(portPoints)
 
-        val startTime = System.currentTimeMillis()
+            val runConfig = RunConfiguration(
+                    graph,
+                    startPort,
+                    loadingPort,
+                    goalPort,
+                    loadingPortPrice,
+                    ship,
+                    numTonnes
+            )
 
-        val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
-                ?: Pair(emptyList(), (-1L).toBigInteger())
-//        val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(configTest) ?: Pair(emptyList(), (-1L).toBigInteger())
+//            val configTest = RunConfiguration(
+//                    graph = graph,
+//                    startNode = graph.getPortById("CNXGA"),
+//                    loadingPort = graph.getPortById("CNTAX"),
+//                    goalNode = graph.getPortById("ARRGA"),
+//                    portPricePrTon = 0,
+//                    ship = ship,
+//                    numTonnes = 0
+//            )
 
-        val middleTime = System.currentTimeMillis()
+            val startTime = System.currentTimeMillis()
 
-        val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
-//        val (aStarPath, aStarCost) = AStar.startAStar(configTest) ?: Pair(emptyList(), (-1L).toBigInteger())
-//        val (aStarPath, aStarCost) = Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+//            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
+//                    ?: Pair(emptyList(), (-1L).toBigInteger())
+            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch().performExhaustiveSearch(runConfig)
+                    ?: Pair(emptyList(), (-1L).toBigInteger())
 
-        val endTime = System.currentTimeMillis()
+            val middleTime = System.currentTimeMillis()
+
+//            val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+            val (aStarPath, aStarCost) = AStar().startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+
+            val endTime = System.currentTimeMillis()
 
 
-        //Calculate meta:
-        val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
-        val AStarDuration = (endTime - middleTime) / 1000 // seconds
-        val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
-            "Both Exhaustive search and A* failed"
-        } else if (exhaustivePath.isEmpty()) {
-            "Exhaustive result failed"
-        } else if (aStarPath.isEmpty()) {
-            "A* result failed"
-        } else {
-            "OK"
+            //Calculate meta:
+            val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
+            val AStarDuration = (endTime - middleTime) / 1000 // seconds
+            val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
+                "Both Exhaustive search and A* failed"
+            } else if (exhaustivePath.isEmpty()) {
+                "Exhaustive result failed"
+            } else if (aStarPath.isEmpty()) {
+                "A* result failed"
+            } else {
+                "OK"
+            }
+
+
+            resultRecords.add(SimulationRecord(
+                    startPort,
+                    loadingPort,
+                    goalPort,
+                    aStarPath,
+                    aStarCost,
+                    AStarDuration,
+                    exhaustivePath,
+                    exhaustiveCost,
+                    exhaustiveDuration,
+                    infoMsg
+            ))
         }
 
-
-        resultRecords.add(SimulationRecord(
-                startPort,
-                loadingPort,
-                goalPort,
-                aStarPath,
-                aStarCost,
-                AStarDuration,
-                exhaustivePath,
-                exhaustiveCost,
-                exhaustiveDuration,
-                infoMsg
-        ))
     }
+
+    resultRecords.sortBy { it.getPortsAsString() as String? }
 
     Logger.log("RESULTS", LogType.SUCCESS)
     resultRecords.forEach {
@@ -239,7 +274,7 @@ fun main() {
     }
 
     resultRecords.forEach {
-        if(it.aStarPath.isNotEmpty()) {
+        if (it.aStarPath.isNotEmpty()) {
             val aStarGeoJson = GeoJson.newEdgesToGeoJson(it.aStarPath)
             File("output/$dateString/${it.getPortsAsString()}-aStar.json").writeText(aStarGeoJson)
         }
@@ -303,6 +338,8 @@ fun main() {
 //    Logger.log("Total duration: \t\t${(endTime - startTime) / 1000.0} seconds")
 
     Logger.log("Done")
+    val finalTime = System.currentTimeMillis()
+    Logger.log("Running time: ${(finalTime - globalStartTime) / 1000} seconds")
 
     if (Config.isMacOS) {
         try {
@@ -344,11 +381,11 @@ data class SimulationRecord(
                 ---
                 Length of aStarPath: ${aStarPath.size}
                 Cost: $aStarCost
-                Duration: $aStarDuration
+                Duration (s): $aStarDuration
                 ---
                 Length of Exhaustive path: ${exhaustivePath.size}
                 Exhaustive Cost: $exhaustiveCost
-                Exhaustive Duration: $exhaustiveDuration
+                Exhaustive Duration (s): $exhaustiveDuration
             """.trimIndent()
 
     fun toCommaSeparatedString() =
@@ -371,3 +408,22 @@ data class RunConfiguration(val graph: Graph,
                             val portPricePrTon: Int,
                             val ship: Ship,
                             val numTonnes: Int)
+
+
+fun getNewGraph(portPoints: List<GraphPortNode>) = if (Config.createNewGraph) {
+    val worldCountries = GeoJson.readWorldCountriesGeoJSON(Config.worldCountriesGeoJsonFile)
+    val g = GraphUtils.createLatLonGraph(portPoints, 100, worldCountries)
+//    GraphUtils.createKlavenessGraph(polygons, portPoints, groupedPoints, worldCountries)
+    ObjectOutputStream(FileOutputStream(Config.graphFilePath)).use {
+        it.writeObject(g)
+        Logger.log("Graph written to file")
+    }
+    g
+} else {
+    var g: Graph? = null
+    ObjectInputStream(FileInputStream(Config.graphFilePath)).use {
+        g = it.readObject() as Graph
+        Logger.log("Graph read from file")
+    }
+    g!!
+}

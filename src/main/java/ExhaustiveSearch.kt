@@ -5,22 +5,10 @@ import Utilities.Logger
 import me.tongfei.progressbar.ProgressBar
 import java.math.BigInteger
 
-object ExhaustiveSearch {
-
-    private lateinit var startNode: GraphNode
-    private lateinit var goalNode: GraphNode
-    private lateinit var graph: Graph
-    private lateinit var graphMap: Map<Position, GraphNode>
-    private lateinit var costMap: MutableMap<Position, BigInteger>
-    private lateinit var timeMap: MutableMap<Position, Long>
-    private lateinit var ship: Ship
-    private lateinit var progressBar: ProgressBar
-    private lateinit var prevBest: MutableMap<Position, GraphNode>
-
-    private var nodesVisited: Int = 0
-    private var edgesVisited: Int = 0
+class ExhaustiveSearch {
 
 
+    /*
     fun startSimpleExhaustive(c: RunConfiguration): Pair<Path, Cost>? =
             startSimpleExhaustive(c.graph, c.startNode, c.loadingPort, c.goalNode, c.portPricePrTon, c.ship, c.numTonnes)
 
@@ -80,6 +68,8 @@ object ExhaustiveSearch {
         return Pair(firstPath + secondPath, firstCost + secondCost + (numTonnes * portPricePrTon).toBigInteger())
     }
 
+     */
+
 
     fun performExhaustiveSearch(c: RunConfiguration) =
             performExhaustiveSearch(c.graph, c.startNode, c.goalNode, c.loadingPort, c.portPricePrTon, c.ship, c.numTonnes)
@@ -95,6 +85,18 @@ object ExhaustiveSearch {
 //        assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
+
+        val (firstPath, firstCost) = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = startNode, goalNode = loadingPort, ship = ship, isLoaded = false, progressBarMessage = "Exhaustive (part 1):") ?: run {
+            Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
+            return null
+        }
+
+        val (secondPath, secondCost) = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = loadingPort, goalNode = goalNode, ship = ship, isLoaded = true, progressBarMessage = "Exhaustive (part 2):") ?: run {
+            Logger.log("Did not find second path of exhaustive search.", LogType.WARNING)
+            return null
+        }
+
+        /*
 
         this.startNode = startNode
         this.goalNode = goalNode
@@ -142,6 +144,8 @@ object ExhaustiveSearch {
             return null
         }
 
+         */
+
         val path = firstPath + secondPath.asIterable()
         val totalCost = firstCost + secondCost + (numTonnes * portPricePrTon).toBigInteger()
 
@@ -150,10 +154,85 @@ object ExhaustiveSearch {
     }
 
 
-    private fun getPathFromMap(prevBest: Map<Position, GraphNode>, startNode: GraphNode, goalNode: GraphNode): Triple<Path, BigInteger, Long>? {
+
+}
+
+
+class ExhaustivePathfinder {
+    private lateinit var costMap: MutableMap<Position, BigInteger>
+    private lateinit var timeMap: MutableMap<Position, Long>
+    private lateinit var prevBest: MutableMap<Position, GraphNode>
+    private lateinit var progressBar: ProgressBar
+
+    private var nodesVisited: Int = 0
+    private var edgesVisited: Int = 0
+
+    fun performExhaustivePathfinding(graph: Graph, startNode: GraphNode, goalNode: GraphNode, ship: Ship, isLoaded: Boolean, progressBarMessage: String): Pair<Path, Cost>? {
+        this.costMap = graph.nodes
+                .map { it.position to (0L).toBigInteger() }
+                .toMap() as MutableMap
+        this.timeMap = graph.nodes
+                .map { it.position to 0L }
+                .toMap() as MutableMap
+        this.prevBest = mutableMapOf()
+        this.nodesVisited = 0
+        this.edgesVisited = 0
+        this.progressBar = ProgressBar(progressBarMessage, graph.nodes.size.toLong(), 500)
+
+        val firstConnections = graph.getOutgoingConnectionsFromNode(startNode, goalNode).toList()
+        expandNodesRecursively(firstConnections, isLoaded = isLoaded, goalNode = goalNode, ship = ship, graph = graph)
+        this.progressBar.close()
+        val (path, cost, _) = getPathFromMap(startNode, goalNode, graph) ?: run {
+//            Logger.log("Did not find first path in exhaustive search!", LogType.WARNING)
+            return null
+        }
+        return Pair(path, cost)
+    }
+
+    /**
+     * This is like a breadth first search
+     */
+    private tailrec fun expandNodesRecursively(edges: Path, isLoaded: Boolean, goalNode: GraphNode, graph: Graph, ship: Ship) {
+        if (edges.isEmpty()) {
+            return
+        }
+
+        val allNextConnections = mutableListOf<GraphEdge>()
+
+        hey@ for (edge in edges) {
+            edgesVisited++
+
+            val prevNode = edge.fromNode
+            val nextNode = edge.toNode
+            val newTime = timeMap[prevNode.position]!! + ship.calculateTimeSpentOnEdge(edge)
+            val reachedTimeWindows = ship.isObeyingAllTimeWindows(nextNode, newTime)
+            if (!reachedTimeWindows) {
+//                Logger.log("Did not reach time window for ${nextNode.name}")
+                continue@hey
+            }
+            val cost = this.costMap[prevNode.position]!! + ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime))
+            val continuePath = saveCost(nextNode, prevNode, cost, newTime, goalNode)
+            if (!continuePath) {
+                continue@hey
+            } else if (nextNode == goalNode) {
+//                Logger.log("The exhaustive search reached the goal node!", LogType.DEBUG)
+                continue@hey
+            } else {
+                val connections = graph.getOutgoingConnectionsFromNode(nextNode, goalNode).toMutableList()
+                connections.removeIf { it.fromNode == nextNode && it.toNode == edge.fromNode } //Remove where we came from
+                allNextConnections.addAll(connections)
+            }
+        }
+        expandNodesRecursively(allNextConnections, isLoaded, goalNode, graph, ship)
+        return
+    }
+
+
+
+    private fun getPathFromMap(startNode: GraphNode, goalNode: GraphNode, graph: Graph): Triple<Path, BigInteger, Long>? {
         val path = mutableListOf<GraphEdge>()
         var currentNode = goalNode
-        var prevNode: GraphNode? = prevBest[currentNode.position] ?: run {
+        var prevNode: GraphNode? = this.prevBest[goalNode.position] ?: run {
             Logger.log("prevNode is null (1), skipping...", LogType.WARNING)
             return null
         }
@@ -169,7 +248,7 @@ object ExhaustiveSearch {
             } else {
                 path.add(connection)
                 currentNode = prevNode
-                prevNode = prevBest[currentNode.position]
+                prevNode = this.prevBest[currentNode.position]
             }
         }
 
@@ -178,50 +257,18 @@ object ExhaustiveSearch {
         return Triple(path.asReversed(), costMap[goalNode.position]!!, timeMap[goalNode.position]!!)
     }
 
-    /**
-     * This is like a breadth first search
-     */
-    private tailrec fun expandNodesRecursively(edges: Path, isLoaded: Boolean, goalNode: GraphNode) {
-        if (edges.isEmpty()) {
-            return
-        }
-
-        val allNextConnections = mutableListOf<GraphEdge>()
-
-        hey@ for (edge in edges) {
-            edgesVisited++
-
-            val prevNode = edge.fromNode
-            val nextNode = edge.toNode
-            val newTime = timeMap[prevNode.position]!! + ship.calculateTimeSpentOnEdge(edge)
-            val reachedTimeWindows = ship.isObeyingAllTimeWindows(nextNode, newTime)
-            if (!reachedTimeWindows) {
-                Logger.log("Did not reach time window for ${nextNode.name}")
-                continue@hey
-            }
-            val cost = costMap[prevNode.position]!! + this.ship.calculateCost(edge, isLoaded, (timeMap[prevNode.position]!! + newTime))
-            val continuePath = saveCost(nextNode, prevNode, cost, newTime)
-            if (!continuePath) {
-                continue@hey
-            } else if (nextNode == goalNode) {
-                continue@hey
-            } else {
-                val connections = graph.getOutgoingConnectionsFromNode(nextNode, goalNode).toMutableList()
-                connections.removeIf { it.fromNode == nextNode && it.toNode == edge.fromNode } //Remove where we came from
-                allNextConnections.addAll(connections)
-            }
-        }
-        expandNodesRecursively(allNextConnections, isLoaded, goalNode)
-        return
-    }
 
     /**
      * Returns true if not a dead end and search should continue down current path
      * Returns false if this is a dead end or a path with a higher cost than previously
      * achieved.
      */
-    private fun saveCost(nextNode: GraphNode, prevNode: GraphNode, cost: BigInteger, newTime: Long): Boolean {
-        val oldCost = costMap[nextNode.position]
+    private fun saveCost(nextNode: GraphNode, prevNode: GraphNode, cost: BigInteger, newTime: Long, goalNode: GraphNode): Boolean {
+        val oldCost = this.costMap[nextNode.position]
+        if (nextNode == goalNode) {
+//            Logger.log("Saving cost for goal node...", LogType.DEBUG)
+//            Logger.log("This is state: $nextNode, $prevNode, $cost, $oldCost, $goalNode", LogType.DEBUG)
+        }
         return when {
             oldCost == null -> {
                 Logger.log("Invalid position: ${nextNode.position}", LogType.ERROR)
@@ -229,22 +276,22 @@ object ExhaustiveSearch {
             }
             oldCost == (0L).toBigInteger() -> { //Same as case below but for debugging purposes
                 if (nextNode == goalNode) {
-                    Logger.log("Reached goal for the first time!", LogType.DEBUG)
+//                    Logger.log("Reached goal for the first time!", LogType.DEBUG)
                 }
-                costMap[nextNode.position] = cost
-                prevBest[nextNode.position] = prevNode
-                timeMap[nextNode.position] = newTime
-                nodesVisited++
+                this.prevBest[nextNode.position] = prevNode
+                this.costMap[nextNode.position] = cost
+                this.timeMap[nextNode.position] = newTime
+                this.nodesVisited++
                 this.progressBar.step()
                 true
             }
             oldCost > cost -> {
                 if (nextNode == goalNode) {
-                    Logger.log("Found a cheaper path to goal.", LogType.DEBUG)
+//                    Logger.log("Found a cheaper path to goal.", LogType.DEBUG)
                 }
-                prevBest[nextNode.position] = prevNode
-                costMap[nextNode.position] = cost
-                timeMap[nextNode.position] = newTime
+                this.prevBest[nextNode.position] = prevNode
+                this.costMap[nextNode.position] = cost
+                this.timeMap[nextNode.position] = newTime
                 true
             }
             oldCost <= cost -> {
@@ -258,13 +305,18 @@ object ExhaustiveSearch {
         }
     }
 
-
 }
 
+
+fun Graph.getOutgoingConnectionsFromNodeNoPortsExceptGoal(node: GraphNode, goalNode: GraphNode): Set<GraphEdge> {
+    return this.edges
+            .filter { it.fromNode == node }
+            .filter { it.toNode !is GraphPortNode || it.toNode == goalNode }
+            .toSet()
+}
 
 fun Graph.getOutgoingConnectionsFromNode(node: GraphNode, goalNode: GraphNode): Set<GraphEdge> {
     return this.edges
             .filter { it.fromNode == node }
-            .filter { it.toNode !is GraphPortNode || it.toNode == goalNode }
             .toSet()
 }
