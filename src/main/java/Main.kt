@@ -7,17 +7,17 @@ import Utilities.*
 import com.marcinmoskala.math.combinations
 import com.marcinmoskala.math.permutations
 import kotlinx.coroutines.*
+import me.tongfei.progressbar.ProgressBar
 import java.io.*
 import java.math.BigInteger
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.system.measureTimeMillis
 
 typealias Path = List<GraphEdge>
 typealias Cost = BigInteger
 
 
-fun main() {
+fun main() = runBlocking {
 
     val globalStartTime = System.currentTimeMillis()
 
@@ -173,67 +173,73 @@ fun main() {
 
     val resultRecords = mutableListOf<SimulationRecord>()
     val numCombinations = subSetOfPorts.toSet().combinations(3).size * 6 //times 6 because of all permutations of 3 ports
+    val pb = ProgressBar("Progress: ", numCombinations.toLong())
+
+
     var counter = 0
-    subSetOfPorts.toSet().combinations(3).forEach { ports ->
+    GlobalScope.launch {
 
-        //Todo: Launch suspending functions here?
-
-        hey@ for (it in ports.permutations()) {
-
-            Logger.log("Evaluating combination #${++counter}/$numCombinations...")
-
-            val startPort = it[0]
-            val loadingPort = it[1]
-            val goalPort = it[2]
-            val numTonnes = 1000
-
-            if ("${startPort.portId}-${loadingPort.portId}-${goalPort.portId}" in alreadyTestedCombinations) {
-                Logger.log("Combination of ports is already tested. Skipping...", LogType.WARNING)
-                continue@hey
-            }
-
-            Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
-
-            val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
-
-            val runConfig = RunConfiguration(
-                    graph,
-                    startPort,
-                    loadingPort,
-                    goalPort,
-                    loadingPortPrice,
-                    ship,
-                    numTonnes
-            )
+        subSetOfPorts.toSet().combinations(3).forEach { ports ->
 
 
-            val startTime = System.currentTimeMillis()
+            //Todo: Launch suspending functions here?
+
+
+            withContext(Dispatchers.Default) {
+                hey@ for (it in ports.permutations()) {
+
+                    Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+
+                    val startPort = it[0]
+                    val loadingPort = it[1]
+                    val goalPort = it[2]
+                    val numTonnes = 1000
+
+                    // Uncomment this if we are running big test
+                    if ("${startPort.portId}-${loadingPort.portId}-${goalPort.portId}" in alreadyTestedCombinations) {
+                        Logger.log("Combination of ports is already tested. Skipping...", LogType.WARNING)
+                        continue@hey
+                    }
+
+                    Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
+
+                    val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
+
+                    val runConfig = RunConfiguration(
+                            graph,
+                            startPort,
+                            loadingPort,
+                            goalPort,
+                            loadingPortPrice,
+                            ship,
+                            numTonnes
+                    )
+
+
+                    val startTime = System.currentTimeMillis()
 
 //            GlobalScope.launch {
-                //            runBlocking {
+                    //            runBlocking {
 
-                /*
-                val exhaustiveJob = async {
-                    Logger.log("Launching exhaustive search in coroutine")
-                    ExhaustiveSearch.performExhaustiveSearch(runConfig)
-                            ?: Pair(emptyList(), (-1L).toBigInteger())
-                }
+                    /*
+                    val exhaustiveJob = async {
+                        Logger.log("Launching exhaustive search in coroutine")
+                        ExhaustiveSearch.performExhaustiveSearch(runConfig)
+                                ?: Pair(emptyList(), (-1L).toBigInteger())
+                    }
 
-                val aStarJob = async {
-                    Logger.log("Launching A* search in coroutine")
-                    AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
-                }
+                    val aStarJob = async {
+                        Logger.log("Launching A* search in coroutine")
+                        AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+                    }
 
-                val (exhaustivePath, exhaustiveCost) = exhaustiveJob.await()
-                val (aStarPath, aStarCost) = aStarJob.await()
+                    val (exhaustivePath, exhaustiveCost) = exhaustiveJob.await()
+                    val (aStarPath, aStarCost) = aStarJob.await()
 
-                 */
+                     */
 
 
-                GlobalScope.launch {
-                    var exhaustivePath: Path = emptyList()
-                    var exhaustiveCost: Cost = 0.toBigInteger()
-
+                    /*
                     val exhaustiveTime = measureTimeMillis {
                         val (exhaustivePath1, exhaustiveCost1) = withContext(Dispatchers.Default) {
                             Logger.log("Launching exhaustive search in coroutine")
@@ -256,6 +262,72 @@ fun main() {
                         aStarCost = aStarCost1
                     }
 
+                     */
+
+                    var exhaustiveDuration = 0L
+                    var aStarDuration = 0L
+
+                    val deferredExhaustive1 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching exhaustive search part1 in coroutine")
+                        val res = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = runConfig.startNode, goalNode = loadingPort, ship = ship, isLoaded = false, progressBarMessage = "Exhaustive (part 1):")
+                                ?: run {
+                                    Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        exhaustiveDuration = System.currentTimeMillis() - start
+                        res
+                    }
+
+                    val deferredExhaustive2 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching exhaustive search part2 in coroutine")
+                        val res = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = runConfig.loadingPort, goalNode = runConfig.goalNode, ship = ship, isLoaded = true, progressBarMessage = "Exhaustive (part 2):")
+                                ?: run {
+                                    Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        exhaustiveDuration = System.currentTimeMillis() - start
+                        res
+                    }
+
+                    val deferredAStar1 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching A* search in part1 coroutine")
+                        val res = graph.performPathfindingBetweenPorts(runConfig.startNode, runConfig.loadingPort, ship, isLoaded = false, progressBarMsg = "A* (part 1):")
+                                ?: run {
+                                    Logger.log("Could not find first A-star path", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        aStarDuration = System.currentTimeMillis() - start
+                        res
+                    }
+
+                    val deferredAStar2 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching A* search in part2 coroutine")
+                        val res = graph.performPathfindingBetweenPorts(runConfig.loadingPort, runConfig.goalNode, ship, isLoaded = true, progressBarMsg = "A* (part 1):")
+                                ?: run {
+                                    Logger.log("Could not find first A-star path", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        aStarDuration = System.currentTimeMillis() - start
+                        res
+                    }
+
+
+                    val (aStarPath1, aStarCost1) = deferredAStar1.await()
+                    val (aStarPath2, aStarCost2) = deferredAStar2.await()
+                    val (exhaustivePath1, exhaustiveCost1) = deferredExhaustive1.await()
+                    val (exhaustivePath2, exhaustiveCost2) = deferredExhaustive2.await()
+
+                    val aStarPath = aStarPath1 + aStarPath2
+                    val aStarCost = aStarCost1 + aStarCost2 + (numTonnes * loadingPortPrice).toBigInteger()
+                    val exhaustiveCost = exhaustiveCost1 + exhaustiveCost2 + (numTonnes * loadingPortPrice).toBigInteger()
+                    val exhaustivePath = exhaustivePath1 + exhaustivePath2
+
+                    pb.step()
+
 
                     //Calculate meta:
 //                val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
@@ -277,18 +349,21 @@ fun main() {
                             goalPort,
                             aStarPath,
                             aStarCost,
-                            0 / 1000,
+                            aStarDuration,
                             exhaustivePath,
                             exhaustiveCost,
-                            0 / 1000,
+                            exhaustiveDuration,
                             infoMsg
                     ))
                 }
 
 
-            val endTime = System.currentTimeMillis()
+                val endTime = System.currentTimeMillis()
+            }
         }
-    }
+    }.join()
+
+    pb.close()
 
     resultRecords.sortBy { it.getPortsAsString() as String? }
 

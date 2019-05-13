@@ -63,7 +63,7 @@ object AStar {
      */
 
 
-    suspend fun startAStar(c: RunConfiguration) =
+     fun startAStar(c: RunConfiguration) =
             startAStar(c.graph, c.startNode, c.goalNode, mapOf((c.loadingPort as GraphPortNode).portId to c.portPricePrTon), c.ship, c.numTonnes, emptyList())
 
 
@@ -193,110 +193,115 @@ object AStar {
         return Pair(minPath, minCost)
     }
 
-    private fun Graph.performPathfindingBetweenPorts(
-            startNode: GraphNode,
-            goalNode: GraphNode,
-            ship: Ship,
-            isLoaded: Boolean,
-            startTime: Long = 0L,
-            progressBarMsg: String = ""
-    ): Pair<Path, Cost>? {
-        val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0.toBigInteger(), timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toBigInteger())
-
-        val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
-        val pb = ProgressBar(progressBarMsg, totalDist)
-
-        val openList = mutableListOf(startRecord)
-        val closedList = mutableListOf<NodeRecord>()
-
-        var currentNode: NodeRecord? = null
-        var currentTime = 0L
-
-        loop@ while (openList.isNotEmpty()) {
-            openList.sortBy { it.estimatedTotalCost as BigInteger? }
-            currentNode = openList.getCheapestEstimatedNode()
-
-            val estimatedDistToDest = currentNode.node.position.distanceFrom(goalNode.position).toLong()
-            val progress = if ((totalDist - estimatedDistToDest) > 0) totalDist - estimatedDistToDest else 0
-            pb.stepTo(progress)
 
 
-            if (currentNode.node == goalNode) {
+}
+
+
+fun Graph.performPathfindingBetweenPorts(
+        startNode: GraphNode,
+        goalNode: GraphNode,
+        ship: Ship,
+        isLoaded: Boolean,
+        startTime: Long = 0L,
+        progressBarMsg: String = ""
+): Pair<Path, Cost>? {
+    val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0.toBigInteger(), timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toBigInteger())
+
+    val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
+//        val pb = ProgressBar(progressBarMsg, totalDist)
+
+    val openList = mutableListOf(startRecord)
+    val closedList = mutableListOf<NodeRecord>()
+
+    var currentNode: NodeRecord? = null
+    var currentTime = 0L
+
+    loop@ while (openList.isNotEmpty()) {
+        openList.sortBy { it.estimatedTotalCost as BigInteger? }
+        currentNode = openList.getCheapestEstimatedNode()
+
+        val estimatedDistToDest = currentNode.node.position.distanceFrom(goalNode.position).toLong()
+        val progress = if ((totalDist - estimatedDistToDest) > 0) totalDist - estimatedDistToDest else 0
+//            pb.stepTo(progress)
+
+
+        if (currentNode.node == goalNode) {
 //                Logger.log("Reached goal! (1)", LogType.DEBUG)
 //                closedList.add(currentNode.flipConnectionNodes())
-                closedList.add(currentNode)
-                break
+            closedList.add(currentNode)
+            break
+        }
+
+        val connections = getOutgoingConnectionsFromNodeRecord(currentNode, goalNode)
+        for (connection in connections) {
+            val endNode = connection.toNode // Directed graph
+            val endNodeTime: Long = currentNode!!.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
+            val reachedAllTimeWindows = ship.isObeyingAllTimeWindows(connection.toNode, endNodeTime)
+            if (!reachedAllTimeWindows) {
+                Logger.log("Breaking loop because we did not meet time window at $endNodeTime for node ${connection.toNode.name}", LogType.ERROR)
+                currentNode = null
+                break@loop
             }
+            val endNodeCost: BigInteger = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
 
-            val connections = getOutgoingConnectionsFromNodeRecord(currentNode, goalNode)
-            for (connection in connections) {
-                val endNode = connection.toNode // Directed graph
-                val endNodeTime: Long = currentNode!!.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
-                val reachedAllTimeWindows = ship.isObeyingAllTimeWindows(connection.toNode, endNodeTime)
-                if (!reachedAllTimeWindows) {
-                    Logger.log("Breaking loop because we did not meet time window at $endNodeTime for node ${connection.toNode.name}", LogType.ERROR)
-                    currentNode = null
-                    break@loop
+            var endNodeRecord: NodeRecord?
+            var endNodeHeuristic: BigInteger
+
+            if (closedList.containsNode(endNode)) { // Does closed list contain node?
+                endNodeRecord = closedList.getNodeRecordOfNode(endNode)
+
+                // If the new node has a lower score than the already stored node, ignore it
+                if (endNodeRecord.costSoFar <= endNodeCost) {
+                    continue
+                } else {
+                    closedList.remove(endNodeRecord)
                 }
-                val endNodeCost: BigInteger = currentNode.costSoFar + ship.calculateCost(connection, isLoaded, endNodeTime)
 
-                var endNodeRecord: NodeRecord?
-                var endNodeHeuristic: BigInteger
+                //TODO: Try to calculate the heuristic traditionally.
+                endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
 
-                if (closedList.containsNode(endNode)) { // Does closed list contain node?
-                    endNodeRecord = closedList.getNodeRecordOfNode(endNode)
+            } else if (openList.containsNode(endNode)) {
+                endNodeRecord = openList.getNodeRecordOfNode(endNode)
 
-                    // If the new node has a lower score than the already stored node, ignore it
-                    if (endNodeRecord.costSoFar <= endNodeCost) {
-                        continue
-                    } else {
-                        closedList.remove(endNodeRecord)
-                    }
+                if (endNodeRecord.costSoFar <= endNodeCost) {
+                    continue
+                }
 
-                    //TODO: Try to calculate the heuristic traditionally.
-                    endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
+                //TODO: Try to calculate the heuristic traditionally.
+                endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
 
-                } else if (openList.containsNode(endNode)) {
-                    endNodeRecord = openList.getNodeRecordOfNode(endNode)
-
-                    if (endNodeRecord.costSoFar <= endNodeCost) {
-                        continue
-                    }
-
-                    //TODO: Try to calculate the heuristic traditionally.
-                    endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
-
-                } else { //Unvisited (new) node
-                    endNodeRecord = NodeRecord(endNode)
+            } else { //Unvisited (new) node
+                endNodeRecord = NodeRecord(endNode)
 //                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
-                    endNodeHeuristic = 0.toBigInteger()
-                }
-
-                currentTime = endNodeTime
-                endNodeRecord.costSoFar = endNodeCost
-                endNodeRecord.timeSoFar = endNodeTime
-                endNodeRecord.connection = connection
-                endNodeRecord.estimatedTotalCost = endNodeCost + endNodeHeuristic
-
-                if (!openList.containsNode(endNode)) {
-                    openList.add(endNodeRecord)
-                    openListHistory.add(endNodeRecord)
-                }
-
-            } // End of connections for loop
-
-            // Current node is now handled. Move it to closed list.
-            openList.remove(currentNode)
-            closedList.add(currentNode!!)
-
-            if (currentNode.node == goalNode) {
-                Logger.log("Reached goal! (2) ", LogType.DEBUG)
-                break
+                endNodeHeuristic = 0.toBigInteger()
             }
 
-        } // End of while loop
+            currentTime = endNodeTime
+            endNodeRecord.costSoFar = endNodeCost
+            endNodeRecord.timeSoFar = endNodeTime
+            endNodeRecord.connection = connection
+            endNodeRecord.estimatedTotalCost = endNodeCost + endNodeHeuristic
 
-        pb.close()
+            if (!openList.containsNode(endNode)) {
+                openList.add(endNodeRecord)
+//                openListHistory.add(endNodeRecord)
+            }
+
+        } // End of connections for loop
+
+        // Current node is now handled. Move it to closed list.
+        openList.remove(currentNode)
+        closedList.add(currentNode!!)
+
+        if (currentNode.node == goalNode) {
+            Logger.log("Reached goal! (2) ", LogType.DEBUG)
+            break
+        }
+
+    } // End of while loop
+
+//        pb.close()
 
 //        if (currentNode != null) {
 //            Logger.log("Reached ${currentNode.node.name} at time $currentTime")
@@ -305,40 +310,38 @@ object AStar {
 //        }
 
 
-        return when (currentNode) {
-            null -> {
-                Logger.log("Did not meet time requirements", LogType.ERROR)
+    return when (currentNode) {
+        null -> {
+            Logger.log("Did not meet time requirements", LogType.ERROR)
+            null
+        }
+        else -> {
+            if (currentNode.node != goalNode) {
+                Logger.log("Did not find aStarPath", LogType.ERROR)
+                Logger.log("Current node for A* is this: $currentNode", LogType.WARNING)
                 null
-            }
-            else -> {
-                if (currentNode.node != goalNode) {
-                    Logger.log("Did not find aStarPath", LogType.ERROR)
-                    Logger.log("Current node for A* is this: $currentNode", LogType.WARNING)
-                    null
-                } else {
+            } else {
 
-                    //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
+                //TODO: Make snapshot of closed and open lists to make cool graphics afterwards
 
-                    val totalCost = currentNode.costSoFar
-                    //Did find a valid aStarPath
-                    val path = mutableListOf<GraphEdge>()
-                    while (currentNode!!.node != startNode) {
-                        path.add(currentNode.connection!!)
-                        closedList.remove(currentNode)
-                        currentNode = closedList.find {
-                            (
-                                    it.node == currentNode!!.connection!!.fromNode
-                                            ||
-                                            it.node == currentNode!!.connection!!.toNode)
-                        }!!
-                    }
-                    Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
-                    Pair(path.asReversed(), totalCost)
+                val totalCost = currentNode.costSoFar
+                //Did find a valid aStarPath
+                val path = mutableListOf<GraphEdge>()
+                while (currentNode!!.node != startNode) {
+                    path.add(currentNode.connection!!)
+                    closedList.remove(currentNode)
+                    currentNode = closedList.find {
+                        (
+                                it.node == currentNode!!.connection!!.fromNode
+                                        ||
+                                        it.node == currentNode!!.connection!!.toNode)
+                    }!!
                 }
+                Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
+                Pair(path.asReversed(), totalCost)
             }
         }
     }
-
 }
 
 

@@ -8,7 +8,10 @@ object Config {
 //    val portIdsOfInterest = listOf<String>("CNXGA", "QAMES", "USCRP")
 //    val portIdsOfInterest = listOf<String>("ARRGA", "KRYOS", "USWWO", "QAMES") // This took 2.13 hours (24 combinations, 8 failed), 5.33 minutes pr combination
 //val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO") // This took 1.77 hours (24 combinations, all succeeded), 4.44 min pr comb.
-    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG")
+//    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG") // This took 2.5 hours
+//    val portIdsOfInterest = listOf<String>("CNXGA", "QAMES", "USCRP") // 17 min with first coroutine version
+//    val portIdsOfInterest = listOf<String>("CNXGA", "QAMES", "USCRP") // 10 min with second coroutine version
+    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG", "QAMES", "PHMNL")
 
 
     val startPortId = "CNXGA"

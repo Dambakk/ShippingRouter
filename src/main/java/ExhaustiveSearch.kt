@@ -71,7 +71,7 @@ object ExhaustiveSearch {
      */
 
 
-    suspend fun performExhaustiveSearch(c: RunConfiguration) =
+    fun performExhaustiveSearch(c: RunConfiguration) =
             performExhaustiveSearch(c.graph, c.startNode, c.goalNode, c.loadingPort, c.portPricePrTon, c.ship, c.numTonnes)
 
     fun performExhaustiveSearch(graph: Graph,
@@ -162,7 +162,7 @@ class ExhaustivePathfinder {
     private lateinit var costMap: MutableMap<Position, BigInteger>
     private lateinit var timeMap: MutableMap<Position, Long>
     private lateinit var prevBest: MutableMap<Position, GraphNode>
-    private lateinit var progressBar: ProgressBar
+//    private lateinit var progressBar: ProgressBar
 
     private var nodesVisited: Int = 0
     private var edgesVisited: Int = 0
@@ -177,11 +177,11 @@ class ExhaustivePathfinder {
         this.prevBest = mutableMapOf()
         this.nodesVisited = 0
         this.edgesVisited = 0
-        this.progressBar = ProgressBar(progressBarMessage, graph.nodes.size.toLong(), 500)
+//        this.progressBar = ProgressBar(progressBarMessage, graph.nodes.size.toLong(), 500)
 
         val firstConnections = graph.getOutgoingConnectionsFromNode(startNode, goalNode).toList()
         expandNodesRecursively(firstConnections, isLoaded = isLoaded, goalNode = goalNode, ship = ship, graph = graph)
-        this.progressBar.close()
+//        this.progressBar.close()
         val (path, cost, _) = getPathFromMap(startNode, goalNode, graph) ?: run {
 //            Logger.log("Did not find first path in exhaustive search!", LogType.WARNING)
             return null
@@ -282,7 +282,7 @@ class ExhaustivePathfinder {
                 this.costMap[nextNode.position] = cost
                 this.timeMap[nextNode.position] = newTime
                 this.nodesVisited++
-                this.progressBar.step()
+//                this.progressBar.step()
                 true
             }
             oldCost > cost -> {
