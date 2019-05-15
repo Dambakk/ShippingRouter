@@ -162,7 +162,7 @@ class ExhaustivePathfinder {
     private lateinit var costMap: MutableMap<Position, BigInteger>
     private lateinit var timeMap: MutableMap<Position, Long>
     private lateinit var prevBest: MutableMap<Position, GraphNode>
-    private lateinit var progressBar: ProgressBar
+//    private lateinit var progressBar: ProgressBar
 
     private var nodesVisited: Int = 0
     private var edgesVisited: Int = 0
@@ -177,11 +177,11 @@ class ExhaustivePathfinder {
         this.prevBest = mutableMapOf()
         this.nodesVisited = 0
         this.edgesVisited = 0
-        this.progressBar = ProgressBar(progressBarMessage, graph.nodes.size.toLong(), 500)
+//        this.progressBar = ProgressBar(progressBarMessage, graph.nodes.size.toLong(), 500)
 
         val firstConnections = graph.getOutgoingConnectionsFromNode(startNode, goalNode).toList()
         expandNodesRecursively(firstConnections, isLoaded = isLoaded, goalNode = goalNode, ship = ship, graph = graph)
-        this.progressBar.close()
+//        this.progressBar.close()
         val (path, cost, _) = getPathFromMap(startNode, goalNode, graph) ?: run {
 //            Logger.log("Did not find first path in exhaustive search!", LogType.WARNING)
             return null
@@ -252,7 +252,7 @@ class ExhaustivePathfinder {
             }
         }
 
-        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} and time spent as ${timeMap[goalNode.position]} from $startNode to $goalNode.")
+//        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} and time spent as ${timeMap[goalNode.position]} from $startNode to $goalNode.")
 
         return Triple(path.asReversed(), costMap[goalNode.position]!!, timeMap[goalNode.position]!!)
     }
@@ -282,7 +282,7 @@ class ExhaustivePathfinder {
                 this.costMap[nextNode.position] = cost
                 this.timeMap[nextNode.position] = newTime
                 this.nodesVisited++
-                this.progressBar.step()
+//                this.progressBar.step()
                 true
             }
             oldCost > cost -> {

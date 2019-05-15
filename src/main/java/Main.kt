@@ -4,24 +4,20 @@ import CostFunctions.PolygonGradientCost
 import CostFunctions.PortServiceTimeWindowHard
 import Models.*
 import Utilities.*
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.marcinmoskala.math.combinations
 import com.marcinmoskala.math.permutations
-import javafx.application.Application.launch
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import me.tongfei.progressbar.ProgressBar
 import java.io.*
 import java.math.BigInteger
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.contracts.contract
 
 typealias Path = List<GraphEdge>
 typealias Cost = BigInteger
 
 
-fun main() {
+fun main() = runBlocking {
 
     val globalStartTime = System.currentTimeMillis()
 
@@ -177,79 +173,203 @@ fun main() {
 
     val resultRecords = mutableListOf<SimulationRecord>()
     val numCombinations = subSetOfPorts.toSet().combinations(3).size * 6 //times 6 because of all permutations of 3 ports
+
+    val pb = ProgressBar("Progress: ", numCombinations.toLong())
+
+
     var counter = 0
-    subSetOfPorts.toSet().combinations(3).forEach { ports ->
+    coroutineScope {
 
-        hey@ for (it in ports.permutations()) {
+        subSetOfPorts.toSet().combinations(3).forEach { ports ->
 
-            Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+            withContext(Dispatchers.Default) {
+                hey@ for (it in ports.permutations()) {
 
-            val startPort = it[0]
-            val loadingPort = it[1]
-            val goalPort = it[2]
-            val numTonnes = 1000
+                    Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+                    pb.step()
 
-            if ("${startPort.portId}-${loadingPort.portId}-${goalPort.portId}" in alreadyTestedCombinations) {
-                Logger.log("Combination of ports is already tested. Skipping...", LogType.WARNING)
-                continue@hey
+
+                    val startPort = it[0]
+                    val loadingPort = it[1]
+                    val goalPort = it[2]
+                    val numTonnes = 1000
+
+                    // Uncomment this if we are running big test
+                    if ("${startPort.portId}-${loadingPort.portId}-${goalPort.portId}" in alreadyTestedCombinations) {
+                        Logger.log("Combination of ports is already tested. Skipping...", LogType.WARNING)
+                        continue@hey
+                    }
+
+                    Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
+
+                    val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
+
+                    val runConfig = RunConfiguration(
+                            graph,
+                            startPort,
+                            loadingPort,
+                            goalPort,
+                            loadingPortPrice,
+                            ship,
+                            numTonnes
+                    )
+
+
+                    val startTime = System.currentTimeMillis()
+
+//            GlobalScope.launch {
+                    //            runBlocking {
+
+                    /*
+                    val exhaustiveJob = async {
+                        Logger.log("Launching exhaustive search in coroutine")
+                        ExhaustiveSearch.performExhaustiveSearch(runConfig)
+                                ?: Pair(emptyList(), (-1L).toBigInteger())
+                    }
+
+                    val aStarJob = async {
+                        Logger.log("Launching A* search in coroutine")
+                        AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+                    }
+
+                    val (exhaustivePath, exhaustiveCost) = exhaustiveJob.await()
+                    val (aStarPath, aStarCost) = aStarJob.await()
+
+                     */
+
+
+                    /*
+                    val exhaustiveTime = measureTimeMillis {
+                        val (exhaustivePath1, exhaustiveCost1) = withContext(Dispatchers.Default) {
+                            Logger.log("Launching exhaustive search in coroutine")
+                            ExhaustiveSearch.performExhaustiveSearch(runConfig)
+                                    ?: Pair(emptyList(), (-1L).toBigInteger())
+                        }
+                        exhaustivePath = exhaustivePath1
+                        exhaustiveCost = exhaustiveCost1
+                    }
+
+
+                    var aStarPath: Path = emptyList()
+                    var aStarCost: Cost = 0.toBigInteger()
+                    val aStarTime = measureTimeMillis {
+                        val (aStarPath1, aStarCost1) = withContext(Dispatchers.Default) {
+                            Logger.log("Launching A* search in coroutine")
+                            AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
+                        }
+                        aStarPath = aStarPath1
+                        aStarCost = aStarCost1
+                    }
+
+                     */
+
+                    var exhaustiveDuration1 = 0L
+                    var exhaustiveDuration2 = 0L
+                    var aStarDuration1 = 0L
+                    var aStarDuration2 = 0L
+
+                    val deferredExhaustive1 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching exhaustive search part1 in coroutine")
+                        val res = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = runConfig.startNode, goalNode = loadingPort, ship = ship, isLoaded = false, progressBarMessage = "Exhaustive (part 1):")
+                                ?: run {
+                                    Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        exhaustiveDuration1 = System.currentTimeMillis() - start
+                        Logger.log("Found Exhaustive path 1. Path length: ${res.first.size}, duration: $exhaustiveDuration1", LogType.DEBUG)
+                        res
+                    }
+
+                    val deferredExhaustive2 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching exhaustive search part2 in coroutine")
+                        val res = ExhaustivePathfinder().performExhaustivePathfinding(graph, startNode = runConfig.loadingPort, goalNode = runConfig.goalNode, ship = ship, isLoaded = true, progressBarMessage = "Exhaustive (part 2):")
+                                ?: run {
+                                    Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        exhaustiveDuration2 = System.currentTimeMillis() - start
+                        Logger.log("Found Exhaustive path 2. Path length: ${res.first.size}, duration: $exhaustiveDuration2", LogType.DEBUG)
+                        res
+                    }
+
+                    val deferredAStar1 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching A* search in part1 coroutine")
+                        val res = graph.performPathfindingBetweenPorts(runConfig.startNode, runConfig.loadingPort, ship, isLoaded = false, progressBarMsg = "A* (part 1):")
+                                ?: run {
+                                    Logger.log("Could not find first A-star path", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        aStarDuration1 = System.currentTimeMillis() - start
+                        Logger.log("Found A* path 1. Path length: ${res.first.size}, duration: $aStarDuration1", LogType.DEBUG)
+                        res
+                    }
+
+                    val deferredAStar2 = async {
+                        val start = System.currentTimeMillis()
+                        Logger.log("Launching A* search in part2 coroutine")
+                        val res = graph.performPathfindingBetweenPorts(runConfig.loadingPort, runConfig.goalNode, ship, isLoaded = true, progressBarMsg = "A* (part 1):")
+                                ?: run {
+                                    Logger.log("Could not find first A-star path", LogType.WARNING)
+                                    Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
+                                }
+                        aStarDuration2 = System.currentTimeMillis() - start
+                        Logger.log("Found A* path 2. Path length: ${res.first.size}, duration: $aStarDuration2", LogType.DEBUG)
+                        res
+                    }
+
+
+                    val (aStarPath1, aStarCost1) = deferredAStar1.await()
+                    val (aStarPath2, aStarCost2) = deferredAStar2.await()
+                    val (exhaustivePath1, exhaustiveCost1) = deferredExhaustive1.await()
+                    val (exhaustivePath2, exhaustiveCost2) = deferredExhaustive2.await()
+
+                    val aStarPath = aStarPath1 + aStarPath2
+                    val aStarCost = aStarCost1 + aStarCost2 + (numTonnes * loadingPortPrice).toBigInteger()
+                    val aStarDuration = aStarDuration1 + aStarDuration2
+                    val exhaustiveCost = exhaustiveCost1 + exhaustiveCost2 + (numTonnes * loadingPortPrice).toBigInteger()
+                    val exhaustivePath = exhaustivePath1 + exhaustivePath2
+                    val exhaustiveDuration = exhaustiveDuration1 + exhaustiveDuration2
+
+
+
+                    //Calculate meta:
+//                val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
+//                val AStarDuration = (endTime - middleTime) / 1000 // seconds
+                    val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
+                        "Both Exhaustive search and A* failed"
+                    } else if (exhaustivePath.isEmpty()) {
+                        "Exhaustive result failed"
+                    } else if (aStarPath.isEmpty()) {
+                        "A* result failed"
+                    } else {
+                        "OK"
+                    }
+
+
+                    resultRecords.add(SimulationRecord(
+                            startPort,
+                            loadingPort,
+                            goalPort,
+                            aStarPath,
+                            aStarCost,
+                            aStarDuration / 1000,
+                            exhaustivePath,
+                            exhaustiveCost,
+                            exhaustiveDuration / 1000,
+                            infoMsg
+                    ))
+                }
+
+
+                val endTime = System.currentTimeMillis()
             }
-
-            Logger.log("${startPort.portId} -> ${loadingPort.portId} -> ${goalPort.portId}")
-
-            val loadingPortPrice = portPrices[loadingPort.portId] ?: 1000
-
-            val runConfig = RunConfiguration(
-                    graph,
-                    startPort,
-                    loadingPort,
-                    goalPort,
-                    loadingPortPrice,
-                    ship,
-                    numTonnes
-            )
-
-            val startTime = System.currentTimeMillis()
-
-            val (exhaustivePath, exhaustiveCost) = ExhaustiveSearch.performExhaustiveSearch(runConfig)
-                    ?: Pair(emptyList(), (-1L).toBigInteger())
-
-            val middleTime = System.currentTimeMillis()
-
-            val (aStarPath, aStarCost) = AStar.startAStar(runConfig) ?: Pair(emptyList(), (-1L).toBigInteger())
-
-            val endTime = System.currentTimeMillis()
-
-
-            //Calculate meta:
-            val exhaustiveDuration = (middleTime - startTime) / 1000 // seconds
-            val AStarDuration = (endTime - middleTime) / 1000 // seconds
-            val infoMsg = if (exhaustivePath.isEmpty() && aStarPath.isEmpty()) {
-                "Both Exhaustive search and A* failed"
-            } else if (exhaustivePath.isEmpty()) {
-                "Exhaustive result failed"
-            } else if (aStarPath.isEmpty()) {
-                "A* result failed"
-            } else {
-                "OK"
-            }
-
-
-            resultRecords.add(SimulationRecord(
-                    startPort,
-                    loadingPort,
-                    goalPort,
-                    aStarPath,
-                    aStarCost,
-                    AStarDuration,
-                    exhaustivePath,
-                    exhaustiveCost,
-                    exhaustiveDuration,
-                    infoMsg
-            ))
         }
-
-
     }
+
+    pb.close()
 
     resultRecords.sortBy { it.getPortsAsString() as String? }
 
