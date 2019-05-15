@@ -252,7 +252,7 @@ class ExhaustivePathfinder {
             }
         }
 
-        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} and time spent as ${timeMap[goalNode.position]} from $startNode to $goalNode.")
+//        Logger.log("Found a path with ${path.size} edges with a cost of ${costMap[goalNode.position]} and time spent as ${timeMap[goalNode.position]} from $startNode to $goalNode.")
 
         return Triple(path.asReversed(), costMap[goalNode.position]!!, timeMap[goalNode.position]!!)
     }

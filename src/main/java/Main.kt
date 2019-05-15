@@ -177,18 +177,16 @@ fun main() = runBlocking {
 
 
     var counter = 0
-    GlobalScope.launch {
+    coroutineScope {
 
         subSetOfPorts.toSet().combinations(3).forEach { ports ->
-
-
-            //Todo: Launch suspending functions here?
-
 
             withContext(Dispatchers.Default) {
                 hey@ for (it in ports.permutations()) {
 
                     Logger.log("Evaluating combination #${++counter}/$numCombinations...")
+                    pb.step()
+
 
                     val startPort = it[0]
                     val loadingPort = it[1]
@@ -264,8 +262,10 @@ fun main() = runBlocking {
 
                      */
 
-                    var exhaustiveDuration = 0L
-                    var aStarDuration = 0L
+                    var exhaustiveDuration1 = 0L
+                    var exhaustiveDuration2 = 0L
+                    var aStarDuration1 = 0L
+                    var aStarDuration2 = 0L
 
                     val deferredExhaustive1 = async {
                         val start = System.currentTimeMillis()
@@ -275,7 +275,8 @@ fun main() = runBlocking {
                                     Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
                                     Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
                                 }
-                        exhaustiveDuration = System.currentTimeMillis() - start
+                        exhaustiveDuration1 = System.currentTimeMillis() - start
+                        Logger.log("Found Exhaustive path 1. Path length: ${res.first.size}, duration: $exhaustiveDuration1", LogType.DEBUG)
                         res
                     }
 
@@ -287,7 +288,8 @@ fun main() = runBlocking {
                                     Logger.log("Did not find first path of exhaustive search.", LogType.WARNING)
                                     Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
                                 }
-                        exhaustiveDuration = System.currentTimeMillis() - start
+                        exhaustiveDuration2 = System.currentTimeMillis() - start
+                        Logger.log("Found Exhaustive path 2. Path length: ${res.first.size}, duration: $exhaustiveDuration2", LogType.DEBUG)
                         res
                     }
 
@@ -299,7 +301,8 @@ fun main() = runBlocking {
                                     Logger.log("Could not find first A-star path", LogType.WARNING)
                                     Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
                                 }
-                        aStarDuration = System.currentTimeMillis() - start
+                        aStarDuration1 = System.currentTimeMillis() - start
+                        Logger.log("Found A* path 1. Path length: ${res.first.size}, duration: $aStarDuration1", LogType.DEBUG)
                         res
                     }
 
@@ -311,7 +314,8 @@ fun main() = runBlocking {
                                     Logger.log("Could not find first A-star path", LogType.WARNING)
                                     Pair(emptyList<GraphEdge>(), (-1L).toBigInteger())
                                 }
-                        aStarDuration = System.currentTimeMillis() - start
+                        aStarDuration2 = System.currentTimeMillis() - start
+                        Logger.log("Found A* path 2. Path length: ${res.first.size}, duration: $aStarDuration2", LogType.DEBUG)
                         res
                     }
 
@@ -323,10 +327,11 @@ fun main() = runBlocking {
 
                     val aStarPath = aStarPath1 + aStarPath2
                     val aStarCost = aStarCost1 + aStarCost2 + (numTonnes * loadingPortPrice).toBigInteger()
+                    val aStarDuration = aStarDuration1 + aStarDuration2
                     val exhaustiveCost = exhaustiveCost1 + exhaustiveCost2 + (numTonnes * loadingPortPrice).toBigInteger()
                     val exhaustivePath = exhaustivePath1 + exhaustivePath2
+                    val exhaustiveDuration = exhaustiveDuration1 + exhaustiveDuration2
 
-                    pb.step()
 
 
                     //Calculate meta:
@@ -349,10 +354,10 @@ fun main() = runBlocking {
                             goalPort,
                             aStarPath,
                             aStarCost,
-                            aStarDuration,
+                            aStarDuration / 1000,
                             exhaustivePath,
                             exhaustiveCost,
-                            exhaustiveDuration,
+                            exhaustiveDuration / 1000,
                             infoMsg
                     ))
                 }
@@ -361,7 +366,7 @@ fun main() = runBlocking {
                 val endTime = System.currentTimeMillis()
             }
         }
-    }.join()
+    }
 
     pb.close()
 

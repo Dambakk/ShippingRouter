@@ -11,7 +11,9 @@ object Config {
 //    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG") // This took 2.5 hours
 //    val portIdsOfInterest = listOf<String>("CNXGA", "QAMES", "USCRP") // 17 min with first coroutine version
 //    val portIdsOfInterest = listOf<String>("CNXGA", "QAMES", "USCRP") // 10 min with second coroutine version
-    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG", "QAMES", "PHMNL")
+//    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG", "QAMES", "PHMNL") // This took 4 hour when adding the last one, with 4 times coroutines
+//    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG", "QAMES", "PHMNL", "USFPO") // with the last two elements and 4 times coroutines this took 7.4 hours
+    val portIdsOfInterest = listOf<String>("ARRGA", "CNTAX", "JPETA", "USWWO", "CNTXG", "QAMES", "PHMNL", "USFPO", "KRYOS", "BMFPT") // with the last two elements and 4 times coroutines this took
 
 
     val startPortId = "CNXGA"

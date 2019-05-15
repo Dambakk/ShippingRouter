@@ -337,7 +337,7 @@ fun Graph.performPathfindingBetweenPorts(
                                         it.node == currentNode!!.connection!!.toNode)
                     }!!
                 }
-                Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
+//                Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
                 Pair(path.asReversed(), totalCost)
             }
         }
