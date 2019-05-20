@@ -29,14 +29,10 @@ data class Ship(
         timeWindowConstraints.add(timeWindow)
     }
 
-    fun calculateHeuristic(): Int {
-        return 0
-    }
-
     fun isObeyingAllTimeWindows(node: GraphNode, time: Long) =
             !timeWindowConstraints
                     .map { it.isWithinTimeWindow(node, time) }
-                    .any{ !it }
+                    .any { !it }
 
     fun calculateCost(edge: GraphEdge, isLoaded: Boolean, currentTime: Long): BigInteger {
         val operationCost = if (isLoaded) edge.distance * operatingCostLoaded else edge.distance * operatingCostEmpyt

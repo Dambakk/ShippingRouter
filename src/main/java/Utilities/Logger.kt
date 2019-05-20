@@ -30,8 +30,8 @@ object Logger {
             LogType.SUCCESS -> "$ANSI_GREEN$msg $ANSI_RESET"
         }
 
-        if (!Config.debug && type == LogType.DEBUG) { }
-        else {
+        if (!Config.debug && type == LogType.DEBUG) {
+        } else {
             println("$counter) $toPrint")
             counter++
         }

@@ -1,6 +1,5 @@
 import Models.*
 import Utilities.*
-import me.tongfei.progressbar.ProgressBar
 import java.math.BigInteger
 
 data class NodeRecord(
@@ -14,56 +13,16 @@ data class NodeRecord(
             connection = null,
             costSoFar = (-1).toBigInteger(),
             timeSoFar = -1,
-            estimatedTotalCost = (-1).toBigInteger())
-
-    fun flipConnectionNodes(): NodeRecord {
-        val tmp = connection?.fromNode
-        connection?.fromNode = connection?.toNode!!
-        connection?.toNode = tmp!!
-        return this
-    }
+            estimatedTotalCost = (-1).toBigInteger()
+    )
 }
 
 object AStar {
 
-
     var openListHistory = mutableListOf<NodeRecord>()
 
-    /*
 
-    fun startSimpleAStar(c: RunConfiguration): Pair<Path, Cost>? =
-            startSimpleAStar(c.graph, c.startNode, c.loadingPort, c.goalNode, c.portPricePrTon, c.ship, c.numTonnes)
-
-    fun startSimpleAStar(
-            graph: Graph,
-            startNode: GraphNode,
-            loadingPort: GraphNode,
-            goalNode: GraphNode,
-            portPricePrTon: Int,
-            ship: Ship,
-            numTonnes: Int
-    ): Pair<Path, Cost>? {
-        assert(startNode in graph.nodes)
-        assert(goalNode in graph.nodes)
-
-        Logger.log("Evaluating for loading port: $loadingPort.")
-        graph.performPathfindingBetweenPorts(startNode, loadingPort, ship, isLoaded = false)?.let { (path1, cost1) ->
-            graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = false)?.let {(path2, cost2) ->
-                val cost = cost1 + cost2 + (numTonnes * portPricePrTon).toBigInteger()
-                Logger.log("Found a aStarPath from ${startNode.name} to ${loadingPort.name} to ${goalNode.name} with aStarCost $cost.")
-                return Pair((path1 + path2.asIterable()), cost)
-            }
-            Logger.log("Did not find aStarPath from loading port to destination port", LogType.WARNING)
-            return null
-        }
-        Logger.log("Did not find aStarPath from start node to loading port", LogType.WARNING)
-        return null
-    }
-
-     */
-
-
-     fun startAStar(c: RunConfiguration) =
+    fun startAStar(c: RunConfiguration) =
             startAStar(c.graph, c.startNode, c.goalNode, mapOf((c.loadingPort as GraphPortNode).portId to c.portPricePrTon), c.ship, c.numTonnes, emptyList())
 
 
@@ -77,15 +36,11 @@ object AStar {
             subsetOfPorts: List<GraphPortNode>
     ): Pair<Path, Cost>? {
 
-//        assert(startNode != goalNode)
+        assert(startNode != goalNode)
         assert(startNode in graph.nodes)
         assert(goalNode in graph.nodes)
 
-        val start = graph.getPortById(Config.startPortId)
-
         val result = mutableMapOf<GraphNode, Pair<List<GraphEdge>, BigInteger>>()
-
-
 
         possibleLoadingPortsWithPrices.forEach { (portId, pricePrTon) ->
             val loadingPort = graph.getPortById(portId)
@@ -95,7 +50,6 @@ object AStar {
                         Logger.log("Could not find first A-star path", LogType.WARNING)
                         return null
                     }
-//            Logger.log("Reached loading port.", LogType.DEBUG)
             val (path2, cost2) = graph.performPathfindingBetweenPorts(loadingPort, goalNode, ship, isLoaded = true, progressBarMsg = "A* (part 2):")
                     ?: run {
                         Logger.log("Could not second first A-star path", LogType.WARNING)
@@ -149,50 +103,17 @@ object AStar {
             }
         }.toGeoJson()
 
-//        Logger.log("Here is list of markers that has been in the open list:")
-//        println()
-//        println(openListMarkers)
-//        println()
-
-
-//        val geoJsonElements = mutableListOf<String>()
-//
-//        sortedResult.forEach { k, v ->
-//            val color = getRandomColor()
-//            val props = """
-//                "marker-color": "$color",
-//                "stroke":"$color",
-//                "total-factor": ${v.second}
-//            """.trimIndent()
-//            val geoJsonElement = GeoJson.pathToGeoJson(v.first, color = color, thickness = thickness.toString(), label = "${v.second}")
-//            val portPoint = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${k.position.lon}, ${k.position.lat}]", props)
-//            geoJsonElements.add(geoJsonElement)
-//            geoJsonElements.add(portPoint)
-//            thickness += 2
-//        }
-//
-//        val startPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${start.position.lon}, ${start.position.lat}]")
-//        val goalPin = GeoJson.createGeoJsonElement(GeoJsonType.POINT, "[${goalNode.position.lon}, ${goalNode.position.lat}]")
-//        geoJsonElements.add(startPin)
-//        geoJsonElements.add(goalPin)
-//
-//        val elements = geoJsonElements.joinToString(separator = ",")
-//        val geoJson = GeoJson.getGeoJson(elements)
-
-//        Logger.log("GeoJson of cheapest a-star path:")
-//        println(geoJson)
 
         val minPath = sortedResult
-                .minBy { it.value.second }!! // minimize by factir
+                .minBy { it.value.second }!! // sort by cost
                 .value.first // Return aStarPath
 
         val minCost = sortedResult
-                .minBy { it.value.second }!! // minimize by factir
+                .minBy { it.value.second }!! // sort by cost
                 .value.second // Return aStarPath
 
         return Pair(minPath, minCost)
     }
-
 
 
 }
@@ -205,11 +126,12 @@ fun Graph.performPathfindingBetweenPorts(
         isLoaded: Boolean,
         startTime: Long = 0L,
         progressBarMsg: String = ""
-): Pair<Path, Cost>? {
+): Triple<Path, Cost, Triple<Int, Int, Int>>? {
     val startRecord = NodeRecord(node = startNode, connection = null, costSoFar = 0.toBigInteger(), timeSoFar = startTime, estimatedTotalCost = startNode.position.distanceFrom(goalNode.position).toBigInteger())
 
-    val totalDist = startNode.position.distanceFrom(goalNode.position).toLong()
-//        val pb = ProgressBar(progressBarMsg, totalDist)
+    var numberOfClosedNodesVisited = 0
+    var numberOfOpenNodesVisited = 0
+    var numberOfEdgesProcessed = 0
 
     val openList = mutableListOf(startRecord)
     val closedList = mutableListOf<NodeRecord>()
@@ -220,21 +142,17 @@ fun Graph.performPathfindingBetweenPorts(
     loop@ while (openList.isNotEmpty()) {
         openList.sortBy { it.estimatedTotalCost as BigInteger? }
         currentNode = openList.getCheapestEstimatedNode()
-
-        val estimatedDistToDest = currentNode.node.position.distanceFrom(goalNode.position).toLong()
-        val progress = if ((totalDist - estimatedDistToDest) > 0) totalDist - estimatedDistToDest else 0
-//            pb.stepTo(progress)
-
+        numberOfOpenNodesVisited++
 
         if (currentNode.node == goalNode) {
-//                Logger.log("Reached goal! (1)", LogType.DEBUG)
-//                closedList.add(currentNode.flipConnectionNodes())
             closedList.add(currentNode)
+            numberOfClosedNodesVisited++
             break
         }
 
         val connections = getOutgoingConnectionsFromNodeRecord(currentNode, goalNode)
         for (connection in connections) {
+            numberOfEdgesProcessed++
             val endNode = connection.toNode // Directed graph
             val endNodeTime: Long = currentNode!!.timeSoFar + ship.calculateTimeSpentOnEdge(connection)
             val reachedAllTimeWindows = ship.isObeyingAllTimeWindows(connection.toNode, endNodeTime)
@@ -258,8 +176,9 @@ fun Graph.performPathfindingBetweenPorts(
                     closedList.remove(endNodeRecord)
                 }
 
-                //TODO: Try to calculate the heuristic traditionally.
-                endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
+                // Heuristic:
+//                endNodeHeuristic = (endNodeCost - endNodeRecord.costSoFar)
+                endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
 
             } else if (openList.containsNode(endNode)) {
                 endNodeRecord = openList.getNodeRecordOfNode(endNode)
@@ -268,13 +187,13 @@ fun Graph.performPathfindingBetweenPorts(
                     continue
                 }
 
-                //TODO: Try to calculate the heuristic traditionally.
-                endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
+                // Heuristic:
+//                endNodeHeuristic = endNodeCost - endNodeRecord.costSoFar
+                endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
 
             } else { //Unvisited (new) node
                 endNodeRecord = NodeRecord(endNode)
-//                    endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
-                endNodeHeuristic = 0.toBigInteger()
+                endNodeHeuristic = endNode.position.distanceFrom(goalNode.position).toBigInteger() // Heuristic: Great-cicle distance
             }
 
             currentTime = endNodeTime
@@ -293,6 +212,8 @@ fun Graph.performPathfindingBetweenPorts(
         // Current node is now handled. Move it to closed list.
         openList.remove(currentNode)
         closedList.add(currentNode!!)
+        numberOfClosedNodesVisited++
+
 
         if (currentNode.node == goalNode) {
             Logger.log("Reached goal! (2) ", LogType.DEBUG)
@@ -300,15 +221,6 @@ fun Graph.performPathfindingBetweenPorts(
         }
 
     } // End of while loop
-
-//        pb.close()
-
-//        if (currentNode != null) {
-//            Logger.log("Reached ${currentNode.node.name} at time $currentTime")
-//        } else {
-//            Logger.log("Did not reach time window? Anyways, current time is $currentTime", LogType.ERROR)
-//        }
-
 
     return when (currentNode) {
         null -> {
@@ -331,14 +243,11 @@ fun Graph.performPathfindingBetweenPorts(
                     path.add(currentNode.connection!!)
                     closedList.remove(currentNode)
                     currentNode = closedList.find {
-                        (
-                                it.node == currentNode!!.connection!!.fromNode
-                                        ||
-                                        it.node == currentNode!!.connection!!.toNode)
+                        it.node == currentNode!!.connection!!.fromNode ||
+                                it.node == currentNode!!.connection!!.toNode
                     }!!
                 }
-//                Logger.log("Did find a path with A* from ${startNode.name} to ${goalNode.name}", LogType.DEBUG)
-                Pair(path.asReversed(), totalCost)
+                Triple(path.asReversed(), totalCost, Triple(numberOfOpenNodesVisited, numberOfClosedNodesVisited, numberOfEdgesProcessed))
             }
         }
     }
@@ -348,13 +257,6 @@ fun Graph.performPathfindingBetweenPorts(
 fun List<NodeRecord>.getCheapestEstimatedNode(): NodeRecord {
     assert(this.isNotEmpty())
     return this.minBy { it.estimatedTotalCost }!!
-}
-
-fun Graph.getConnectionsForNode(node: NodeRecord): Set<GraphEdge> {
-    return this.edges.filter {
-        it.fromNode == node.node ||
-                it.toNode == node.node
-    }.toSet()
 }
 
 
@@ -374,7 +276,6 @@ fun Graph.getOutgoingConnectionsFromNodeRecord(node: NodeRecord, goalNode: Graph
 fun List<NodeRecord>.containsNode(node: GraphNode): Boolean {
     return this.find { it.node == node } != null
 }
-
 
 fun List<NodeRecord>.getNodeRecordOfNode(node: GraphNode): NodeRecord {
     return this.find { it.node == node }!!

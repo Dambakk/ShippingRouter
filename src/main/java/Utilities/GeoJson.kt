@@ -17,7 +17,6 @@ interface GeoJsonInterface {
 infix fun Coordinate.notIn(countries: List<Polygon>) = !countries.any { it.contains(GeometryFactory().createPoint(this)) }
 
 infix fun GraphNode.notIn(countries: List<Polygon>) = Coordinate(this.position.lon, this.position.lat) notIn countries
-//        !countries.any { it.contains(GeometryFactory().createPoint(Coordinate(this.position.lon, this.position.lat))) }
 
 
 data class ShippingGeoJsonObject(val type: String,
@@ -35,7 +34,6 @@ data class ShippingGeoJsonObject(val type: String,
             it.getPolygonPositions()
                     .map { polygon ->
                         val coords = polygon.map { pos -> Coordinate(pos.lat, pos.lon) } as MutableList
-//                        val coords = polygon.map { pos -> Coordinate(pos.lon, pos.lat) } as MutableList
                         coords.add(coords[0]) //To make a closed ring
                         GeometryFactory()
                                 .createPolygon(coords.toTypedArray())
@@ -134,9 +132,6 @@ object GeoJson {
         val elementsAsString = elements.joinToString(separator = ",")
         return getGeoJson(elementsAsString)
     }
-
-    fun pointToGeoJson(point: GraphNode) = createGeoJsonElement(GeoJsonType.POINT, "[${point.position.lon}, ${point.position.lat}]")
-
 
     fun pathToGeoJson(path: List<GraphEdge>, color: String = "#000000", thickness: String = "5", label: String = "no-label"): String {
         val coords = path.map { item ->

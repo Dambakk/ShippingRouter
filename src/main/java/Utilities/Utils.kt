@@ -15,18 +15,9 @@ import org.locationtech.geomesa.features.serialization.`DimensionalBounds$class`
 import java.math.BigInteger
 
 
-object Utils {
-
-    fun toJsonString(input: Any): String {
-        val gson = Gson()
-        return gson.toJson(input)
-    }
-
-}
-
-fun Long.toBigInteger() = BigInteger.valueOf(this)
-fun Int.toBigInteger() = BigInteger.valueOf(toLong())
-fun Double.toBigInteger() = BigInteger.valueOf(toLong())
+fun Long.toBigInteger() = BigInteger.valueOf(this)!!
+fun Int.toBigInteger() = BigInteger.valueOf(toLong())!!
+fun Double.toBigInteger() = BigInteger.valueOf(toLong())!!
 
 /**
  * Calculate distance between two points in latitude and longitude taking
@@ -128,10 +119,6 @@ infix fun Position.isIn(klavenessPolygon: KlavenessPolygon): Boolean {
     return javaPolygon.contains(Point(this.lat.toInt(), this.lon.toInt()))
 }
 
-//infix fun Models.Position.Utilities.isIn(klavenessPolygons: List<Models.KlavenessPolygon>): Boolean {
-//    klavenessPolygons.any { it.contains(GeometryFactory().createPoint(Coordinate(this.lat, this.lon))) }
-//}
-
 fun GraphEdge.splitInTwo(): List<GraphEdge> {
     val middlePos = this.getMiddlePosition()
     val middleNode = GraphNode(this.fromNode.name, middlePos)
@@ -155,7 +142,7 @@ fun GeoHash.getGeoHashWithPrecision(precision: Int): String {
     if (precision !in 0..64) {
         throw Exception("Precision must be in interval (0,64)")
     }
-    return this.toBinaryString().substring(0..(precision - 1))
+    return this.toBinaryString().substring(0 until precision)
 }
 
 
@@ -164,24 +151,16 @@ fun Set<GraphNode>.getNodeWithPosition(position: Position): GraphNode {
     return node ?: throw Exception("Did not find a node that covers this position: $position")
 }
 
-
-fun writeJsonToFile(geoJson: String) {
-    val file = File(Config.geoJsonFilePath)
-    file.writeText(geoJson)
-    println("Written geoJson to ${Config.geoJsonFilePath}.")
-}
-
-
 fun getRandomColor(portId: String = "") =
-    when (portId) {
-        "Corpus Christi" -> "#de816f"
-        "Mesaieed" -> "#1f42d8"
-        "Rio Grande (Argentina)" -> "#68115d"
-        else -> {
-            val a = Random.nextInt(255).toString(16)
-            val b = Random.nextInt(255).toString(16)
-            val c = Random.nextInt(255).toString(16)
-            "#$a$b$c"
+        when (portId) {
+            "Corpus Christi" -> "#de816f"
+            "Mesaieed" -> "#1f42d8"
+            "Rio Grande (Argentina)" -> "#68115d"
+            else -> {
+                val a = Random.nextInt(255).toString(16)
+                val b = Random.nextInt(255).toString(16)
+                val c = Random.nextInt(255).toString(16)
+                "#$a$b$c"
+            }
         }
-    }
 

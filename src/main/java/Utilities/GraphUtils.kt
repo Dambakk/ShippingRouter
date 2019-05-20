@@ -27,8 +27,7 @@ object GraphUtils {
     fun createLatLonGraph(ports: List<GraphPortNode>, initialPrecision: Int, worldCountries: List<Polygon>): Graph {
         assert(initialPrecision in 0..100) { "Invalid precision" }
 
-        val step = 1 // Can be 1
-//        val step = 0.5 // Can be 1
+        val step = 1
 
         val nodes = mutableListOf<GraphNode>()
         var connections = mutableListOf<GraphEdge>()
@@ -93,8 +92,6 @@ object GraphUtils {
         var counter = 0
         portPoints.forEach { port ->
             val portLat = (((port.position.lat.toInt()) / step) * step)
-//            val portLat = (((port.position.lat.toInt()) / step) * step).toInt() // Round off to match graph grid
-//            val portLon = (((port.position.lon.toInt()) / step) * step).toInt() // Round off to match graph grid
             val portLon = (((port.position.lon.toInt()) / step) * step)
 
             assert(portLat % step == 0 && portLon % step == 0) { "Port position is not part of graph grid" }
@@ -103,9 +100,7 @@ object GraphUtils {
                 counter++
             }
 
-            // TODO: Change to only 1?
             for (t in 1..2) {
-//            for (t in 1..1) {
 
                 nodesMap[Pair(portLat - step * t, portLon)]?.run {
                     val conn = GraphEdge(this, port, this.position.distanceFrom(port.position).toInt())
@@ -255,13 +250,11 @@ object GraphUtils {
 
         // 4) Create connections from ports to klavenessPolygon edges
 
-        //TODO: Move this part to below the filtering of illage edges?
         val portPoints = ports.map {
             val polygon = it.position.getCorrespondingPolygon(klavenessPolygons)
             assert(polygon is KlavenessPolygon)
             GraphPortNode(it.name, it.position, polygon!!, it.portId)
         }
-        //TODO: Move this part to below the filtering of illage edges?
         portPoints.forEach { port ->
             port.klavenessPolygon!!.graphNodes.forEach {
                 val connection = GraphEdge(port, it, port.position.distanceFrom(it.position).toInt())
@@ -298,22 +291,6 @@ object GraphUtils {
 
         val filteredConnections = connections.removeEdgesOnLand(worldCountries)
 
-//        val filteredConnections = connections.filter {
-//            ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
-//                    ((it.fromNode is GraphPortNode) && (it.toNode !is GraphPortNode && it.toNode notIn worldCountries)) ||
-//                    ((it.fromNode !is GraphPortNode && it.fromNode notIn worldCountries) && (it.toNode is GraphPortNode))
-//        }
-//                .filterNot { edge ->
-//                                        //val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lat, edge.fromNode.position.lon), Coordinate(edge.toNode.position.lat, edge.toNode.position.lon)).toTypedArray())
-//                    if (edge.fromNode is GraphPortNode || edge.toNode is GraphPortNode) {
-//                        false
-//                    } else {
-//                        val line = GeometryFactory().createLineString(listOf(Coordinate(edge.fromNode.position.lon, edge.fromNode.position.lat), Coordinate(edge.toNode.position.lon, edge.toNode.position.lat)).toTypedArray())
-//                        worldCountries.any { it.crosses(line) }
-//                    }
-//                }
-//                .toMutableList()
-
         val filteredConnectionsAsGeoJson = GeoJson.edgesToGeoJson(filteredConnections)
 
 
@@ -324,14 +301,7 @@ object GraphUtils {
 
         println("6) Remove edges that connects to nodes on land and make graph directed. Now, a total of ${directedConnections.size} connections")
 
-//        val allNodes = portPoints + klavenessPolygons.map { it.graphNodes }.flatten()
-
-//        val graph = Models.Graph(connections, allNodes)
-//        val graph = Models.Graph(filteredConnections, filteredNodes + portPoints)
-        val graph = Graph(directedConnections, groupedPoints + portPoints)
-
-        return graph
-
+        return Graph(directedConnections, groupedPoints + portPoints)
     }
 
 

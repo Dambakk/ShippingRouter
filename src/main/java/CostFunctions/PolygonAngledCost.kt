@@ -26,7 +26,6 @@ class PolygonAngledCost(
 ) : BasePolygonCostFunction {
 
     override val polygon: Polygon
-    var totalCost: BigInteger = 0.toBigInteger()
 
     init {
         assert(weight in 0.0..1.0) { "Weight must be in inclusive range 0.0 to 1.0" }
@@ -34,16 +33,12 @@ class PolygonAngledCost(
         polygon = GeoJson.readSinglePolygonGeoJson(geoJsonFilePath)
     }
 
-
-    //TODO: Revisit angle calculation and check this post: https://stackoverflow.com/questions/12234574/calculating-if-an-angle-is-between-two-angles
     override fun getCost(edge: GraphEdge): Long {
         if (edge.fromNode isCoveredBy polygon && edge.toNode isCoveredBy polygon) {
             val actualAngle = edge.fromNode.position angleBetween edge.toNode.position
             val angleDiff = (actualAngle - targetAngle + 180 + 360) % 360 - 180 //https://stackoverflow.com/questions/12234574/calculating-if-an-angle-is-between-two-angles
-//            return if (!fadingCost && actualAngle in ((targetAngle - maxOffsetDegrees) % 360.0)..((targetAngle + maxOffsetDegrees) % 360.0)) {
             return if (!fadingCost && (angleDiff <= maxOffsetDegrees && angleDiff >= -maxOffsetDegrees)) {
                 (edge.distance * maxCost).toLong()
-//            } else if (fadingCost && actualAngle in ((targetAngle - maxOffsetDegrees) % 360.0)..((targetAngle + maxOffsetDegrees) % 360.0)) {
             } else if (fadingCost && (angleDiff <= maxOffsetDegrees && angleDiff >= -maxOffsetDegrees)) {
                 val offset = (actualAngle - targetAngle).absoluteValue % 360.0
                 val offsetFactor = 1 - (offset / maxOffsetDegrees)

@@ -22,14 +22,8 @@ class PolygonCost(override var weight: Float, val cost: Long, geoJsonFilePath: S
                 0
             }
 
-
-
     override fun getCost(edge: GraphEdge): Long {
-        //TODO: Hente bare fra fromNode
-        val a = getNodeCost(edge.fromNode)
-//        val b = getNodeCost(edge.toNode)
-
-        return a //+ b
+        return getNodeCost(edge.fromNode)
     }
 
 }
